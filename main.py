@@ -135,9 +135,25 @@ def add_pay_record(conn, cursor, date_paid, paid_amount,
 
 
 # READ
-def read_employees(conn, cursor):
+def read_employees(cursor):
     cursor.execute('SELECT * FROM employees')
     return cursor.fetchall()
+
+
+# UPDATE
+def update_employees(cursor, employee_id, last_name, 
+                     first_name, daily_rate):
+    cursor.execute('''
+                   UPDATE users SET
+                   last_name = ?, first_name = ?, daily_rate = ?
+
+                   WHERE
+                   id = ?
+                   ''', (last_name, first_name, daily_rate, employee_id))
+
+
+
+# DELETE
 
 
 def main():
