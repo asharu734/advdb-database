@@ -193,6 +193,58 @@ def update_project(conn, cursor,  project_name, project_start, project_end):
                    ''', (project_name, project_start, project_end))
     conn.commit()
 
+def update_attendance_log(conn, cursor,  employee_id, project_id,
+                     time_in, time_out, date):
+    cursor.execute('''
+                   UPDATE attendance_log SET
+                   employee_id = ?, project_id = ?, time_in = ?, time_out = ?
+
+                   WHERE
+                   attendance_log = ?
+                   ''', (employee_id, project_id, time_in, time_out, date))
+    conn.commit()
+
+def update_deduction(conn, cursor,  employee_id, deduction_type):
+    cursor.execute('''
+                   UPDATE deduction SET
+                   employee_id = ?, deduction_type = ?
+
+                   WHERE
+                   deduction = ?
+                   ''', (employee_id, deduction_type))
+    conn.commit()
+
+def update_payroll(conn, cursor,  gross_salary, net_salary,
+                     week_start, week_end, attendance_log_id):
+    #Since Harold isn't sure if this is correct, this also applies here.
+    cursor.execute('''
+                   UPDATE payroll SET
+                   gross_salary = ?, net_salary = ?, week_start = ?, week_end = ?, attendance_log_id = ?
+
+                   WHERE
+                   payroll = ?
+                   ''', (gross_salary, net_salary, week_start, week_end, attendance_log_id))
+    conn.commit()
+
+def update_payroll_deduction(conn, cursor,  payroll_id, deduction_id, deduction_amount):
+    cursor.execute('''
+                   UPDATE payroll_deduction SET
+                   payroll_id = ?, deduction_id = ?, deduction_amount = ?
+
+                   WHERE
+                   payroll_deduction = ?
+                   ''', (payroll_id, deduction_id, deduction_amount))
+    conn.commit()
+
+def update_pay_record(conn, cursor,  payroll_id, date_paid, amount):
+    cursor.execute('''
+                   UPDATE pay_record SET
+                   payroll_id = ?, date_paid = ?, amount = ?
+
+                   WHERE
+                   pay_record = ?
+                   ''', (payroll_id, date_paid, amount))
+    conn.commit()
 
 # DELETE
 def delete_employee(conn, cursor, employee_id):
