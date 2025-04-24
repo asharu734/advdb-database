@@ -183,6 +183,15 @@ def update_employees(conn, cursor, employee_id, lastname,
                    ''', (lastname, firstname, daily_rate, employee_id))
     conn.commit()
 
+def update_project(conn, cursor,  project_name, project_start, project_end):
+    cursor.execute('''
+                   UPDATE project SET
+                   project_name = ?, project_start = ?, project_end = ?
+
+                   WHERE
+                   project = ?
+                   ''', (project_name, project_start, project_end))
+    conn.commit()
 
 
 # DELETE
