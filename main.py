@@ -94,6 +94,30 @@ def add_project(conn, cursor, project_name, project_start, project_end):
     conn.commit()
     print(f"Added project {project_name}")
 
+def compute_attendance_hours(time_in_str, time_out_str):
+    time_format = "%H:%M"
+    time_in = datetime.strptime(time_in_str, time_format)
+    time_out = datetime.strptime(time_out_str, time_format)
+    
+    if time_out <= time_in:
+        raise ValueError("Time out must be after time in for same-day shifts.")
+
+    attendance_hours = (time_out - time_in).seconds / 3600  # convert seconds to hours
+    return attendance_hours
+
+def add_attendance_log(conn, cursor, employee_id, project_id, time_in, time_out, date):
+    attendance_hours = compute_attendance_hours(time_in, time_out)
+
+    if attendance_hours > 8:
+        overtime_hours = attendance_hours - 8
+
+    cursor.execute('''
+                    INSERT INTO attendance_log
+                        (employee_id, project_id, time_in, time_out. overtime_hours, date, attendance_hours)
+                    VALUES
+                        (?, ?, ?, ?, ?, ?, ?)''', (employee_id, project_id, time_in, time_in, overtime_hours, date, attendance_hours))
+    conn.commit()
+    print(f"Added attendance for {date}")
 
 def add_deduction(conn, cursor, employee_id, deduction_type):
     cursor.execute('''
