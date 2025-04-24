@@ -107,8 +107,15 @@ def add_deduction(conn, cursor, employee_id, deduction_type):
 
 
 def main():
-    conn = create_connection("payroll_app.db")
+    database = "payroll_app.db"
+    conn = create_connection(database)
     cursor = conn.cursor()
+    
+    if conn is None:
+        print("Error: No connection")
+        exit()
+
+    create_table(conn, cursor)
 
 
 if __name__ == '__main__':
