@@ -171,7 +171,7 @@ def read_employees(cursor):
 
 
 # UPDATE
-def update_employees(cursor, employee_id, last_name, 
+def update_employees(conn, cursor, employee_id, last_name, 
                      first_name, daily_rate):
     cursor.execute('''
                    UPDATE employee SET
