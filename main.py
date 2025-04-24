@@ -82,7 +82,7 @@ def create_table(conn, cursor):
 
     conn.commit()
 
-
+#CREATE
 def add_employee(conn, cursor, lastname, firstname, daily_rate):
     cursor.execute('INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)', (lastname, firstname, daily_rate))
     conn.commit()
@@ -114,8 +114,9 @@ def add_attendance_log(conn, cursor, employee_id, project_id, time_in, time_out,
                     INSERT INTO attendance_log
                         (employee_id, project_id, time_in, time_out, overtime_hours, date, attendance_hours)
                     VALUES
-                        (?, ?, ?, ?, ?, ?, ?)''', (employee_id, project_id, time_in, time_in, overtime_hours, date, attendance_hours))
-    conn.commit()
+                        (?, ?, ?, ?, ?, ?, ?)
+                ''', (employee_id, project_id, time_in, time_out, overtime_hours, date, attendance_hours))
+
     print(f"Added attendance for {date}")
 
 def add_deduction(conn, cursor, employee_id, deduction_type):
@@ -145,10 +146,10 @@ def add_payroll(conn, cursor, gross_salary, net_salary,
 
 def add_payroll_deduction(conn, cursor, payroll_id, deduction_id, deduction_amount):
     cursor.execute('''
-                   INSERT INTO deduction
+                   INSERT INTO payroll_deduction
                        (payroll_id, deduction_id, deduction_amount)
                    VALUES
-                       (?, ?)
+                       (?, ?, ?)
                    ''', (payroll_id, deduction_id, deduction_amount))
     conn.commit()
     print(f"Added deduction {deduction_id}")
@@ -159,7 +160,7 @@ def add_pay_record(conn, cursor, payroll_id, date_paid, amount):
                    INSERT INTO pay_record
                        (payroll_id, date_paid, amount)
                    VALUES
-                       (?, ?, ?, ?)
+                       (?, ?, ?)
                    ''', (payroll_id, date_paid, amount))
     conn.commit()
 
@@ -171,22 +172,22 @@ def read_employees(cursor):
 
 
 # UPDATE
-def update_employees(conn, cursor, employee_id, last_name, 
-                     first_name, daily_rate):
+def update_employees(conn, cursor, employee_id, lastname, 
+                     firstname, daily_rate):
     cursor.execute('''
                    UPDATE employee SET
-                   last_name = ?, first_name = ?, daily_rate = ?
+                   lastname = ?, firstname = ?, daily_rate = ?
 
                    WHERE
-                   id = ?
-                   ''', (last_name, first_name, daily_rate, employee_id))
+                   employee_id = ?
+                   ''', (lastname, firstname, daily_rate, employee_id))
     conn.commit()
 
 
 
 # DELETE
 def delete_employee(conn, cursor, employee_id):
-    cursor.execute('DELETE FROM employees WHERE id = ?', (employee_id))
+    cursor.execute('DELETE FROM employee WHERE employee_id = ?', (employee_id,))
     conn.commit()
 
 
