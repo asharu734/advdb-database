@@ -7,6 +7,7 @@ def create_connection(database_file):
     conn = sqlite3.connect(database_file)
     return conn
 
+
 def create_table(conn, cursor):
     cursor.executescript('''
     CREATE TABLE IF NOT EXISTS EMPLOYEE 
@@ -92,6 +93,17 @@ def add_project(conn, cursor, project_name, project_start, project_end):
     cursor.execute('INSERT INTO project (project_name, project_start, project_end) VALUES (?, ?, ?)', (project_name, project_start, project_end))
     conn.commit()
     print(f"Added project {project_name}")
+
+
+def add_deduction(conn, cursor, deduction_type):
+    cursor.execute('''
+                   INSERT INTO deduction
+                       (deduction_type)
+                   VALUES
+                       (?)
+                   ''', (deduction_type))
+    conn.commit()
+    print(f"Added deduction {deduction_type}")
 
 
 def main():
