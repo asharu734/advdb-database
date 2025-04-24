@@ -106,6 +106,21 @@ def add_deduction(conn, cursor, employee_id, deduction_type):
     print(f"Added deduction {deduction_type}")
 
 
+def add_payroll(conn, cursor, gross_salary, net_salary,
+                week_start, week_end, attendance_log_id):
+    # This may be wrong
+    cursor.execute('''
+                   INSERT INTO payroll
+                       (attendance_log_id, gross_salary, net_salary,
+                        week_start, week_end)
+                   VALUES
+                       (?, ?, ?, ?, ?)
+                   ''', (attendance_log_id, gross_salary, net_salary,
+                         week_start, week_end))
+    conn.commit()
+    print("Added new payroll")
+
+
 def main():
     database = "payroll_app.db"
     conn = create_connection(database)
