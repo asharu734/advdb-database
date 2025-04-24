@@ -213,7 +213,7 @@ def update_project(conn, cursor,  project_name, project_start, project_end):
                    project_name = ?, project_start = ?, project_end = ?
 
                    WHERE
-                   project = ?
+                   project_id = ?
                    ''', (project_name, project_start, project_end))
     conn.commit()
 
@@ -224,7 +224,7 @@ def update_attendance_log(conn, cursor,  employee_id, project_id,
                    employee_id = ?, project_id = ?, time_in = ?, time_out = ?
 
                    WHERE
-                   attendance_log = ?
+                   attendance_log_id = ?
                    ''', (employee_id, project_id, time_in, time_out, date))
     conn.commit()
 
@@ -234,7 +234,7 @@ def update_deduction(conn, cursor,  employee_id, deduction_type):
                    employee_id = ?, deduction_type = ?
 
                    WHERE
-                   deduction = ?
+                   deduction_id = ?
                    ''', (employee_id, deduction_type))
     conn.commit()
 
@@ -246,7 +246,7 @@ def update_payroll(conn, cursor,  gross_salary, net_salary,
                    gross_salary = ?, net_salary = ?, week_start = ?, week_end = ?, attendance_log_id = ?
 
                    WHERE
-                   payroll = ?
+                   payroll_id = ?
                    ''', (gross_salary, net_salary, week_start, week_end, attendance_log_id))
     conn.commit()
 
@@ -256,7 +256,7 @@ def update_payroll_deduction(conn, cursor,  payroll_id, deduction_id, deduction_
                    payroll_id = ?, deduction_id = ?, deduction_amount = ?
 
                    WHERE
-                   payroll_deduction = ?
+                   payroll_deduction_id = ?
                    ''', (payroll_id, deduction_id, deduction_amount))
     conn.commit()
 
@@ -266,13 +266,37 @@ def update_pay_record(conn, cursor,  payroll_id, date_paid, amount):
                    payroll_id = ?, date_paid = ?, amount = ?
 
                    WHERE
-                   pay_record = ?
+                   pay_record_id = ?
                    ''', (payroll_id, date_paid, amount))
     conn.commit()
 
 # DELETE
 def delete_employee(conn, cursor, employee_id):
     cursor.execute('DELETE FROM employee WHERE employee_id = ?', (employee_id,))
+    conn.commit()
+
+def delete_project(conn, cursor, project_id):
+    cursor.execute('DELETE FROM project WHERE project_id = ?', (project_id,))
+    conn.commit()
+
+def delete_attendance_log(conn, cursor, attendance_log_id):
+    cursor.execute('DELETE FROM attendance_log WHERE attendance_log_id = ?', (attendance_log_id,))
+    conn.commit()
+
+def delete_deduction(conn, cursor, deduction_id):
+    cursor.execute('DELETE FROM deduction WHERE deduction_id = ?', (deduction_id,))
+    conn.commit()
+
+def delete_payroll(conn, cursor, payroll_id):
+    cursor.execute('DELETE FROM payroll WHERE payroll_id = ?', (payroll_id,))
+    conn.commit()
+
+def delete_payroll_deduction(conn, cursor, payroll_deduction_id):
+    cursor.execute('DELETE FROM payroll_deduction WHERE payroll_deduction_id = ?', (payroll_deduction_id,))
+    conn.commit()
+
+def delete_pay_record(conn, cursor, pay_record_id):
+    cursor.execute('DELETE FROM pay_record WHERE pay_record_id = ?', (pay_record_id,))
     conn.commit()
 
 
