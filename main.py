@@ -170,6 +170,30 @@ def read_employees(cursor):
     cursor.execute('SELECT * FROM employee')
     return cursor.fetchall()
 
+def read_projects(cursor):
+    cursor.execute('SELECT * FROM project')
+    return cursor.fetchall()
+
+def read_attendance_logs(cursor):
+    cursor.execute('SELECT * FROM attendance_log')
+    return cursor.fetchall()
+
+def read_deductions(cursor):
+    cursor.execute('SELECT * FROM deduction')
+    return cursor.fetchall()
+
+def read_payrolls(cursor):
+    cursor.execute('SELECT * FROM payroll')
+    return cursor.fetchall()
+
+def read_payroll_deductions(cursor):
+    cursor.execute('SELECT * FROM payroll_deduction')
+    return cursor.fetchall()
+
+def read_pay_records(cursor):
+    cursor.execute('SELECT * FROM pay_record')
+    return cursor.fetchall()
+
 
 # UPDATE
 def update_employees(conn, cursor, employee_id, lastname, 
