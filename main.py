@@ -59,7 +59,7 @@ def create_table(conn, cursor):
             FOREIGN KEY (attendance_log_id) REFERENCES ATTENDANCE_LOG(attendance_log_id)
         );
 
-    CREATE TABLE IF NOT EXISTS PAYROLL_DEDUTION
+    CREATE TABLE IF NOT EXISTS PAYROLL_DEDUCTION
         (
             payroll_id INTEGER NOT NULL,
             deduction_id INTEGER NOT NULL,
@@ -108,12 +108,11 @@ def compute_attendance_hours(time_in_str, time_out_str):
 def add_attendance_log(conn, cursor, employee_id, project_id, time_in, time_out, date):
     attendance_hours = compute_attendance_hours(time_in, time_out)
 
-    if attendance_hours > 8:
-        overtime_hours = attendance_hours - 8
+    overtime_hours = attendance_hours - 8 if attendance_hours > 8 else 0
 
     cursor.execute('''
                     INSERT INTO attendance_log
-                        (employee_id, project_id, time_in, time_out. overtime_hours, date, attendance_hours)
+                        (employee_id, project_id, time_in, time_out, overtime_hours, date, attendance_hours)
                     VALUES
                         (?, ?, ?, ?, ?, ?, ?)''', (employee_id, project_id, time_in, time_in, overtime_hours, date, attendance_hours))
     conn.commit()
@@ -144,46 +143,44 @@ def add_payroll(conn, cursor, gross_salary, net_salary,
     conn.commit()
     print("Added new payroll")
 
-def add_payroll_deduction(conn, cursor, deduction_amount, payroll_id, deduction_id):
+def add_payroll_deduction(conn, cursor, payroll_id, deduction_id, deduction_amount):
     cursor.execute('''
                    INSERT INTO deduction
-                       (deduction_amount, payroll_id, deduction_type)
+                       (payroll_id, deduction_id, deduction_amount)
                    VALUES
                        (?, ?)
-                   ''', (deduction_amount, payroll_id, deduction_id))
+                   ''', (payroll_id, deduction_id, deduction_amount))
     conn.commit()
     print(f"Added deduction {deduction_id}")
 
 
-def add_pay_record(conn, cursor, date_paid, paid_amount,
-                   employee_daily_rate, payroll_id):
+def add_pay_record(conn, cursor, payroll_id, date_paid, amount):
     cursor.execute('''
                    INSERT INTO pay_record
-                       (date_paid, paid_amount, employee_daily_rate,
-                        payroll_id)
+                       (payroll_id, date_paid, amount)
                    VALUES
                        (?, ?, ?, ?)
-                   ''', (date_paid, paid_amount, employee_daily_rate,
-                         payroll_id))
+                   ''', (payroll_id, date_paid, amount))
     conn.commit()
 
 
 # READ
 def read_employees(cursor):
-    cursor.execute('SELECT * FROM employees')
+    cursor.execute('SELECT * FROM employee')
     return cursor.fetchall()
 
 
 # UPDATE
-def update_employees(cursor, employee_id, last_name, 
+def update_employees(conn, cursor, employee_id, last_name, 
                      first_name, daily_rate):
     cursor.execute('''
-                   UPDATE users SET
+                   UPDATE employee SET
                    last_name = ?, first_name = ?, daily_rate = ?
 
                    WHERE
                    id = ?
                    ''', (last_name, first_name, daily_rate, employee_id))
+    conn.commit()
 
 
 
