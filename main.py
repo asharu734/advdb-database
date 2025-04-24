@@ -1,17 +1,15 @@
 import sqlite3
 from datetime import datetime
-from sys import exit
 
-#Connect to the sqlite database
-conn = sqlite3.connect("payroll_app.db")
-crsr = conn.cursor()
-
-conn.commit()
 
 #FUNCTIONS
+def create_connection(database_file):
+    conn = sqlite3.connect(database_file)
+    return conn
 
-def create_table():
-    crsr.executescript('''
+
+def create_table(conn, cursor):
+    cursor.executescript('''
     CREATE TABLE IF NOT EXISTS EMPLOYEE 
         (
             employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,51 +80,35 @@ def create_table():
 
     ''')
 
+    conn.commit()
 
-def add_employee(lastname, firstname, daily_rate):
-    crsr.execute('INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)', (lastname, firstname, daily_rate))
+
+def add_employee(conn, cursor, lastname, firstname, daily_rate):
+    cursor.execute('INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)', (lastname, firstname, daily_rate))
     conn.commit()
     print(f"Added employee: {lastname} at Php{daily_rate}")
 
 
-def add_project(project_name, project_start, project_end):
-    crsr.execute('INSERT INTO project (project_name, project_start, project_end) VALUES (?, ?, ?)', (project_name, project_start, project_end))
+def add_project(conn, cursor, project_name, project_start, project_end):
+    cursor.execute('INSERT INTO project (project_name, project_start, project_end) VALUES (?, ?, ?)', (project_name, project_start, project_end))
     conn.commit()
     print(f"Added project {project_name}")
 
-<<<<<<< HEAD
-def add_deduction(employee_id, deduction_type):
-    crsr.execute("INSERT INTO employee_id, deduction_type", (employee_id, deduction_type))
-=======
 
-# Connect to employee
-def add_deduction(conn, cursor, deduction_type):
+def add_deduction(conn, cursor, employee_id, deduction_type):
     cursor.execute('''
                    INSERT INTO deduction
-                       (deduction_type)
+                       (employee_id, deduction_type)
                    VALUES
-                       (?)
-                   ''', (deduction_type))
->>>>>>> c9e7232286ff0ba52ecd47cf4c8e391167a875c7
+                       (?, ?)
+                   ''', (employee_id, deduction_type))
     conn.commit()
-    print(f"Deduction type has been added for {employee_id}")
+    print(f"Added deduction {deduction_type}")
+
 
 def main():
-<<<<<<< HEAD
-    pass
-=======
-    database = "payroll_app.db"
-    conn = create_connection(database)
+    conn = create_connection("payroll_app.db")
     cursor = conn.cursor()
-    
-    if conn is None:
-        print("Error: No connection")
-        exit()
-
-    create_table(conn, cursor)
-    
-    
->>>>>>> c9e7232286ff0ba52ecd47cf4c8e391167a875c7
 
 
 if __name__ == '__main__':
