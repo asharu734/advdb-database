@@ -1,16 +1,15 @@
 import sqlite3
 from datetime import datetime
 
-#Connect to the sqlite database
-conn = sqlite3.connect("payroll_app.db")
-crsr = conn.cursor()
-
-conn.commit()
 
 #FUNCTIONS
+def create_connection(database_file):
+    conn = sqlite3.connect(database_file)
+    return conn
 
-def create_table():
-    crsr.executescript('''
+def create_table(conn):
+    cursor = conn.cursor()
+    cursor.executescript('''
     CREATE TABLE IF NOT EXISTS EMPLOYEE 
         (
             employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,6 +80,8 @@ def create_table():
 
     ''')
 
+    conn.commit()
+
 
 def add_employee(lastname, firstname, daily_rate):
     crsr.execute('INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)', (lastname, firstname, daily_rate))
@@ -95,7 +96,7 @@ def add_project(project_name, project_start, project_end):
 
 
 def main():
-    pass
+    conn = create_connection("payroll_app.db")
 
 
 if __name__ == '__main__':
