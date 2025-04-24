@@ -121,6 +121,19 @@ def add_payroll(conn, cursor, gross_salary, net_salary,
     print("Added new payroll")
 
 
+def add_pay_record(conn, cursor, date_paid, paid_amount,
+                   employee_daily_rate, payroll_id):
+    cursor.execute('''
+                   INSERT INTO pay_record
+                       (date_paid, paid_amount, employee_daily_rate,
+                        payroll_id)
+                   VALUES
+                       (?, ?, ?, ?)
+                   ''', (date_paid, paid_amount, employee_daily_rate,
+                         payroll_id))
+    conn.commit()
+
+
 def main():
     database = "payroll_app.db"
     conn = create_connection(database)
