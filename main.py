@@ -86,7 +86,16 @@ def add_employee(lastname, firstname, daily_rate):
     conn.commit()
     print(f"Added employee: {lastname} at Php{daily_rate}")
 
+
 def add_project(project_name, project_start, project_end):
     crsr.execute('INSERT INTO project (project_name, project_start, project_end) VALUES (?, ?, ?)', (project_name, project_start, project_end))
     conn.commit()
     print(f"Added project {project_name}")
+
+
+def main():
+    pass
+
+
+if __name__ == '__main__':
+    main()
