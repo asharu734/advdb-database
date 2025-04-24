@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+from sys import exit
 
 #Connect to the sqlite database
 conn = sqlite3.connect("payroll_app.db")
@@ -93,13 +94,39 @@ def add_project(project_name, project_start, project_end):
     conn.commit()
     print(f"Added project {project_name}")
 
+<<<<<<< HEAD
 def add_deduction(employee_id, deduction_type):
     crsr.execute("INSERT INTO employee_id, deduction_type", (employee_id, deduction_type))
+=======
+
+# Connect to employee
+def add_deduction(conn, cursor, deduction_type):
+    cursor.execute('''
+                   INSERT INTO deduction
+                       (deduction_type)
+                   VALUES
+                       (?)
+                   ''', (deduction_type))
+>>>>>>> c9e7232286ff0ba52ecd47cf4c8e391167a875c7
     conn.commit()
     print(f"Deduction type has been added for {employee_id}")
 
 def main():
+<<<<<<< HEAD
     pass
+=======
+    database = "payroll_app.db"
+    conn = create_connection(database)
+    cursor = conn.cursor()
+    
+    if conn is None:
+        print("Error: No connection")
+        exit()
+
+    create_table(conn, cursor)
+    
+    
+>>>>>>> c9e7232286ff0ba52ecd47cf4c8e391167a875c7
 
 
 if __name__ == '__main__':
