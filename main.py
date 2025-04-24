@@ -2,7 +2,7 @@ import sqlite3
 from datetime import datetime
 
 
-#FUNCTIONS
+# CREATE
 def create_connection(database_file):
     conn = sqlite3.connect(database_file)
     return conn
@@ -132,6 +132,12 @@ def add_pay_record(conn, cursor, date_paid, paid_amount,
                    ''', (date_paid, paid_amount, employee_daily_rate,
                          payroll_id))
     conn.commit()
+
+
+# READ
+def read_employees(conn, cursor):
+    cursor.execute('SELECT * FROM employees')
+    return cursor.fetchall()
 
 
 def main():
