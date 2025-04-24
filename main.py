@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime
+from sys import exit
 
 
 #FUNCTIONS
@@ -95,6 +96,7 @@ def add_project(conn, cursor, project_name, project_start, project_end):
     print(f"Added project {project_name}")
 
 
+# Connect to employee
 def add_deduction(conn, cursor, deduction_type):
     cursor.execute('''
                    INSERT INTO deduction
@@ -107,8 +109,17 @@ def add_deduction(conn, cursor, deduction_type):
 
 
 def main():
-    conn = create_connection("payroll_app.db")
+    database = "payroll_app.db"
+    conn = create_connection(database)
     cursor = conn.cursor()
+    
+    if conn is None:
+        print("Error: No connection")
+        exit()
+
+    create_table(conn, cursor)
+    
+    
 
 
 if __name__ == '__main__':
