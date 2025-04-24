@@ -7,8 +7,7 @@ def create_connection(database_file):
     conn = sqlite3.connect(database_file)
     return conn
 
-def create_table(conn):
-    cursor = conn.cursor()
+def create_table(conn, cursor):
     cursor.executescript('''
     CREATE TABLE IF NOT EXISTS EMPLOYEE 
         (
@@ -83,20 +82,21 @@ def create_table(conn):
     conn.commit()
 
 
-def add_employee(lastname, firstname, daily_rate):
-    crsr.execute('INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)', (lastname, firstname, daily_rate))
+def add_employee(conn, cursor, lastname, firstname, daily_rate):
+    cursor.execute('INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)', (lastname, firstname, daily_rate))
     conn.commit()
     print(f"Added employee: {lastname} at Php{daily_rate}")
 
 
-def add_project(project_name, project_start, project_end):
-    crsr.execute('INSERT INTO project (project_name, project_start, project_end) VALUES (?, ?, ?)', (project_name, project_start, project_end))
+def add_project(conn, cursor, project_name, project_start, project_end):
+    cursor.execute('INSERT INTO project (project_name, project_start, project_end) VALUES (?, ?, ?)', (project_name, project_start, project_end))
     conn.commit()
     print(f"Added project {project_name}")
 
 
 def main():
     conn = create_connection("payroll_app.db")
+    cursor = conn.cursor()
 
 
 if __name__ == '__main__':
