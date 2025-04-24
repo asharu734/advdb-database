@@ -144,6 +144,16 @@ def add_payroll(conn, cursor, gross_salary, net_salary,
     conn.commit()
     print("Added new payroll")
 
+def add_payroll_deduction(conn, cursor, deduction_amount, payroll_id, deduction_id):
+    cursor.execute('''
+                   INSERT INTO deduction
+                       (deduction_amount, payroll_id, deduction_type)
+                   VALUES
+                       (?, ?)
+                   ''', (deduction_amount, payroll_id, deduction_id))
+    conn.commit()
+    print(f"Added deduction {deduction_id}")
+
 
 def add_pay_record(conn, cursor, date_paid, paid_amount,
                    employee_daily_rate, payroll_id):
@@ -159,9 +169,25 @@ def add_pay_record(conn, cursor, date_paid, paid_amount,
 
 
 # READ
-def read_employees(conn, cursor):
+def read_employees(cursor):
     cursor.execute('SELECT * FROM employees')
     return cursor.fetchall()
+
+
+# UPDATE
+def update_employees(cursor, employee_id, last_name, 
+                     first_name, daily_rate):
+    cursor.execute('''
+                   UPDATE users SET
+                   last_name = ?, first_name = ?, daily_rate = ?
+
+                   WHERE
+                   id = ?
+                   ''', (last_name, first_name, daily_rate, employee_id))
+
+
+
+# DELETE
 
 
 def main():
