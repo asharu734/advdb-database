@@ -23,12 +23,12 @@ def create_table(conn, cursor):
             project_id INTEGER PRIMARY KEY AUTOINCREMENT,
             project_name TEXT NOT NULL,
             project_start DATE NOT NULL,
-            project_end DATE
+            project_end DATE,
+            budget REAL
         );
 
-    CREATE TABLE IF NOT EXISTS ATTENDANCE_LOG
+    CREATE TABLE IF NOT EXISTS DEPLOYMENT_LIST
         (
-            attendance_log_id INTEGER PRIMARY KEY AUTOINCREMENT,
             employee_id INTEGER NOT NULL,
             project_id INTEGER NOT NULL,
             time_in TIME NOT NULL,
@@ -51,12 +51,12 @@ def create_table(conn, cursor):
     CREATE TABLE IF NOT EXISTS PAYROLL
         (
             payroll_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            attendance_log_id INTEGER NOT NULL,
+            employee_id INTEGER NOT NULL,
             gross_salary REAL NOT NULL,
             net_salary REAL NOT NULL,
             week_start DATE NOT NULL,
             week_end DATE NOT NULL,
-            FOREIGN KEY (attendance_log_id) REFERENCES ATTENDANCE_LOG(attendance_log_id)
+            FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
         );
 
     CREATE TABLE IF NOT EXISTS PAYROLL_DEDUCTION
@@ -72,10 +72,11 @@ def create_table(conn, cursor):
     CREATE TABLE IF NOT EXISTS PAY_RECORD
         (
             pay_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            payroll_id INTEGER NOT NULL,
+            employee_id INTEGER NOT NULL,
             date_paid DATE NOT NULL,
             amount REAL NOT NULL,
-            FOREIGN KEY (payroll_id) REFERENCES PAYROLL(payroll_id)
+            reference_number INTEGER NOT NULL,
+            FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
         );
 
     ''')
@@ -111,7 +112,7 @@ def add_attendance_log(conn, cursor, employee_id, project_id, time_in, time_out,
     overtime_hours = attendance_hours - 8 if attendance_hours > 8 else 0
 
     cursor.execute('''
-                    INSERT INTO attendance_log
+                    INSERT INTO deployment_list
                         (employee_id, project_id, time_in, time_out, overtime_hours, date, attendance_hours)
                     VALUES
                         (?, ?, ?, ?, ?, ?, ?)
