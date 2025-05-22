@@ -168,7 +168,9 @@ def add_pay_record(conn, cursor, payroll_id, date_paid, amount):
 # READ
 def read_employees(cursor):
     cursor.execute('SELECT * FROM employee')
-    return cursor.fetchall()
+    employees = cursor.fetchall()
+    print("Employee Records:", employees)
+    return employees
 
 def read_projects(cursor):
     cursor.execute('SELECT * FROM project')
@@ -311,6 +313,11 @@ def main():
 
     create_table(conn, cursor)
 
+
+    read_employees(cursor)
+
+# for edample
+# print(reaed_employees)
 
 if __name__ == '__main__':
     main()
