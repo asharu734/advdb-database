@@ -44,10 +44,16 @@ class App:
         self.button_frame = Frame(self.root)
         self.button_frame.pack(pady=10)
 
-        Button(self.button_frame, text="Add...", command=self.add_employee).grid(row=0, column=0, padx=5)
-        Button(self.button_frame, text="Edit", command=self.edit_employee).grid(row=0, column=1, padx=5)
-        Button(self.button_frame, text="Delete", command=self.delete_employee).grid(row=0, column=2, padx=5)
-        Button(self.button_frame, text="Ok").grid(row=0, column=3, padx=5)
+        Button(self.button_frame, text="Add...", command=self.add_employee) \
+            .grid(row=0, column=0, padx=5)
+        Button(self.button_frame, text="Edit", command=self.edit_employee) \
+            .grid(row=0, column=1, padx=5)
+        Button(self.button_frame, text="Delete", command=self.delete_employee) \
+            .grid(row=0, column=2, padx=5)
+        Button(self.button_frame, text="Ok", command=self.confirm_selection) \
+            .grid(row=0, column=3, padx=5)
+        Button(self.button_frame, text="View Attendance", command=self.view_attendance) \
+            .grid(row=0, column=4, padx=5)
 
 
     def load_employees(self):
@@ -278,6 +284,34 @@ class App:
                     messagebox.showerror("Error", "Failed to delete employee")
             except requests.exceptions.RequestException as e:
                 messagebox.showerror("Error", f"Server error: {e}")
+
+
+    def view_attendance(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("Hmm", "Pick an employee first.")
+            return
+
+        emp_id = self.tree.item(selected[0], "values")[0]
+        logs = [
+            log for log in database.read_attendance_logs(self.cursor)
+            if str(log[1]) == str(emp_id)
+        ]
+
+        popup = Toplevel(self.root)
+        popup.title("Attendance Logs")
+
+        tree = ttk.Treeview(popup, columns=("Project", "Date", "In", "Out", "Hours", "OT"), show="headings")
+        for col in tree["columns"]:
+            tree.heading(col, text=col)
+        tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+        for log in logs:
+            project_id = log[2]
+            # optiMight resolve project name from project_id
+            project_name = f"#{project_id}"  # placeholder
+            tree.insert("", "end", values=(project_name, log[6], log[3], log[4], log[7], log[5]))
+
 
 if __name__ == "__main__":
     app = App()
