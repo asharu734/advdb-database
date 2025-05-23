@@ -1,0 +1,1 @@
+api_base_url = "http://localhost:5000/api" # Change to server IP if needed
