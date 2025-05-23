@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk, messagebox
 from tkinter import filedialog
+from projects_view import ProjectManager
 import database
 import requests
 
@@ -60,6 +61,11 @@ class App:
             .grid(row=1, column=2, padx=5)
         Button(self.button_frame, text="Pay History", command=self.view_pay_history) \
             .grid(row=1, column=3, padx=5)
+        Button(
+            self.button_frame, 
+            text="Projects", 
+            command=lambda: ProjectManager(self.root, self.api_url)) \
+        .grid(row=2, column=0, padx=5)
 
 
     def load_employees(self):
@@ -286,7 +292,7 @@ class App:
             response = requests.delete(f"{self.api_url}/employees/{employee_id}")
             if response.status_code == 200:
                 self.load_employees()  # Refresh the list
-                
+
             else:
                 messagebox.showerror("Error", "Failed to delete employee")
 
