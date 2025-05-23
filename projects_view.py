@@ -1,27 +1,28 @@
 from tkinter import *
+from tkinter import Frame
 from tkinter import ttk, messagebox
 import database
 import requests
 
-class ProjectManager:
-    def __init__(self, root, api_url):
+class ProjectManager(Frame):
+    def __init__(self, parent, api_url):
+        super().__init__(parent)
+
         self.api_url = api_url
-        self.root = Toplevel(root)
-        self.root.title("Manage Projects")
 
         self.init_ui()
         self.load_projects()
 
 
     def init_ui(self):
-        Label(self.root, text="Project List").pack(pady=5)
+        Label(self, text="Project List").pack(pady=5)
 
-        self.tree = ttk.Treeview(self.root, columns=("ID", "Name"), show="headings")
+        self.tree = ttk.Treeview(self, columns=("ID", "Name"), show="headings")
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Project Name")
         self.tree.pack(fill="both", expand=True, padx=10, pady=5)
 
-        btn_frame = Frame(self.root)
+        btn_frame = Frame(self)
         btn_frame.pack(pady=10)
 
         Button(btn_frame, text="Add Project", command=self.add_project).grid(row=0, column=0, padx=5)

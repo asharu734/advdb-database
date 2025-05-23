@@ -10,6 +10,8 @@ class App:
     def __init__(self):
         self.root = Tk()
 
+        self.api_url = "http://localhost:5000/api"  # Change to server IP if needed
+
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True)
 
@@ -19,10 +21,8 @@ class App:
         self.project_tab = ProjectManager(self.notebook, self.api_url)
         self.notebook.add(self.project_tab, text="Projects")
 
-        version = "0.0.11"
+        version = "0.0.27"
         self.root.title(f"Employee Payroll Management System v{version}")
-
-        self.api_url = "http://localhost:5000/api"  # Change to server IP if needed
 
         self.init_ui()
         self.load_employees()
