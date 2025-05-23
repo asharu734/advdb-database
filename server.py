@@ -236,7 +236,7 @@ def get_project_deployments(project_id):
         conn.close()
 
 @app.route('/api/deployments/employee/<int:employee_id>')
-def get_employee_deployments(employee_id):
+def get_employee_deployments_filtered(employee_id):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
