@@ -2,22 +2,23 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 import os
+from datetime import datetime
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Database file path (use an absolute path)
+# Database configuration
 DB_PATH = os.path.abspath("payroll_app.db")
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row  # Return rows as dictionaries
+    conn.row_factory = sqlite3.Row
     return conn
 
-# Initialize database tables (run once)
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
+    
     cursor.executescript('''
     CREATE TABLE IF NOT EXISTS EMPLOYEE (
         employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,59 +26,189 @@ def init_db():
         firstname TEXT NOT NULL,
         daily_rate REAL NOT NULL
     );
+
     CREATE TABLE IF NOT EXISTS PROJECT (
         project_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_name TEXT NOT NULL
+        project_name TEXT NOT NULL,
+        project_start DATE NOT NULL,
+        project_end DATE,
+        budget REAL
+    );
+
+    CREATE TABLE IF NOT EXISTS DEPLOYMENT_LIST (
+        employee_id INTEGER NOT NULL,
+        project_id INTEGER NOT NULL,
+        time_in TIME NOT NULL,
+        time_out TIME NOT NULL,
+        overtime_hours REAL DEFAULT 0,
+        date DATE NOT NULL,
+        attendance_hours REAL,
+        PRIMARY KEY(employee_id, project_id, date),
+        FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id),
+        FOREIGN KEY (project_id) REFERENCES PROJECT(project_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS DEDUCTION (
+        deduction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id INTEGER NOT NULL,
+        deduction_type TEXT NOT NULL,
+        FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS PAYROLL (
+        payroll_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id INTEGER NOT NULL,
+        gross_salary REAL NOT NULL,
+        net_salary REAL NOT NULL,
+        week_start DATE NOT NULL,
+        week_end DATE NOT NULL,
+        FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS PAYROLL_DEDUCTION (
+        payroll_id INTEGER NOT NULL,
+        deduction_id INTEGER NOT NULL,
+        deduction_amount REAL NOT NULL,
+        PRIMARY KEY(payroll_id, deduction_id),
+        FOREIGN KEY (payroll_id) REFERENCES PAYROLL(payroll_id),
+        FOREIGN KEY (deduction_id) REFERENCES DEDUCTION(deduction_id)
+    );
+                
+    CREATE TABLE IF NOT EXISTS PAY_RECORD (
+        pay_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        employee_id INTEGER NOT NULL,
+        date_paid DATE NOT NULL,
+        amount REAL NOT NULL,
+        reference_number INTEGER NOT NULL,
+        FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
     );
     ''')
     conn.commit()
     conn.close()
 
-# Employees API
+# Helper function to compute attendance hours
+def compute_attendance_hours(time_in_str, time_out_str):
+    time_format = "%H:%M"
+    time_in = datetime.strptime(time_in_str, time_format).time()
+    time_out = datetime.strptime(time_out_str, time_format).time()
+    
+    if time_out <= time_in:
+        raise ValueError("Time out must be after time in")
+    
+    total_seconds = (datetime.combine(datetime.today(), time_out) - 
+                    datetime.combine(datetime.today(), time_in)).total_seconds()
+    return total_seconds / 3600
+
+# EMPLOYEE ENDPOINTS
 @app.route('/api/employees', methods=['GET', 'POST'])
 def employees():
     conn = get_db_connection()
-    cursor = conn.cursor()
-
-    if request.method == 'GET':
-        cursor.execute("SELECT * FROM employee")
-        employees = cursor.fetchall()
+    try:
+        if request.method == 'GET':
+            employees = conn.execute('SELECT * FROM employee').fetchall()
+            return jsonify([dict(row) for row in employees])
+        
+        elif request.method == 'POST':
+            data = request.json
+            cursor = conn.cursor()
+            cursor.execute(
+                'INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)',
+                (data['lastname'], data['firstname'], data['daily_rate'])
+            )
+            conn.commit()
+            return jsonify({
+                'id': cursor.lastrowid,
+                'lastname': data['lastname'],
+                'firstname': data['firstname'],
+                'daily_rate': data['daily_rate']
+            }), 201
+    finally:
         conn.close()
-        return jsonify([dict(row) for row in employees])
 
-    elif request.method == 'POST':
-        data = request.json
-        cursor.execute(
-            "INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)",
-            (data['lastname'], data['firstname'], data['daily_rate'])
-        )
-        conn.commit()
-        conn.close()
-        return jsonify({"status": "success", "id": cursor.lastrowid}), 201
-
-# Project API
+# PROJECT ENDPOINTS
 @app.route('/api/projects', methods=['GET', 'POST'])
 def projects():
     conn = get_db_connection()
-    cursor = conn.cursor()
-
-    if request.method == 'GET':
-        cursor.execute("SELECT * FROM project")
-        employees = cursor.fetchall()
+    try:
+        if request.method == 'GET':
+            projects = conn.execute('SELECT * FROM project').fetchall()
+            return jsonify([dict(row) for row in projects])
+        
+        elif request.method == 'POST':
+            data = request.json
+            cursor = conn.cursor()
+            cursor.execute(
+                '''INSERT INTO project 
+                (project_name, project_start, project_end, budget) 
+                VALUES (?, ?, ?, ?)''',
+                (data['project_name'], data.get('project_start'), 
+                 data.get('project_end'), data.get('budget', 0))
+            )
+            conn.commit()
+            return jsonify({
+                'project_id': cursor.lastrowid,
+                'project_name': data['project_name']
+            }), 201
+    finally:
         conn.close()
-        return jsonify([dict(row) for row in employees])
-    
-    elif request.method == 'POST':
-        data = request.json
-        cursor.execute(
-            "INSERT INTO project (project_name) VALUES (?)",
-            (data['project_name'])
-        )
+
+# DEPLOYMENT ENDPOINTS
+@app.route('/api/deployments', methods=['POST'])
+def add_deployment():
+    data = request.json
+    try:
+        attendance_hours = compute_attendance_hours(data['time_in'], data['time_out'])
+        overtime = max(0, attendance_hours - 8)
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO deployment_list 
+            (employee_id, project_id, time_in, time_out, 
+             overtime_hours, date, attendance_hours)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (data['employee_id'], data['project_id'], 
+             data['time_in'], data['time_out'], 
+             overtime, data['date'], attendance_hours))
         conn.commit()
+        return jsonify({'status': 'success'}), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    finally:
         conn.close()
-        return jsonify({"status": "success", "id": cursor.lastrowid}), 201
 
-# Run the server
+# PAYROLL ENDPOINTS
+@app.route('/api/payroll', methods=['POST'])
+def create_payroll():
+    data = request.json
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        
+        # Create payroll record
+        cursor.execute('''
+            INSERT INTO payroll 
+            (employee_id, gross_salary, net_salary, week_start, week_end)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (data['employee_id'], data['gross_salary'], 
+             data['net_salary'], data['week_start'], data['week_end']))
+        
+        payroll_id = cursor.lastrowid
+        
+        # Add payroll deductions if any
+        for deduction in data.get('deductions', []):
+            cursor.execute('''
+                INSERT INTO payroll_deduction 
+                (payroll_id, deduction_id, deduction_amount)
+                VALUES (?, ?, ?)
+            ''', (payroll_id, deduction['deduction_id'], deduction['amount']))
+        
+        conn.commit()
+        return jsonify({'payroll_id': payroll_id}), 201
+    finally:
+        conn.close()
+
+# Initialize and run the server
 if __name__ == '__main__':
-    init_db()  # Initialize tables if they don't exist
+    init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)
