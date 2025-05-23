@@ -7,29 +7,20 @@ import requests
 class App:
     def __init__(self):
         self.root = Tk()
-        self.root.title("Payroll System (Client)")
-        self.api_url = "http://localhost:5000/api"  # Change to server IP if needed
-        self.init_ui()
-        self.load_employees()
         version = "0.0.3"
         self.root.title(f"Employee Payroll Management System v{version}")
 
-        self.db_name = "payroll_app.db"
-        self.conn = database.create_connection(self.db_name)
-        if self.conn is None:
-            messagebox.showerror("Error", "Could not connect to database")
-            self.root.destroy()
-            return
-        
-        self.cursor = self.conn.cursor()
-        database.create_table(self.conn, self.cursor) #Ensures the table exists
+        self.api_url = "http://localhost:5000/api"  # Change to server IP if needed
 
-        self.init_heading()
-        self.init_employee_view()
-        self.init_buttons()
+        self.init_ui()
         self.load_employees()
 
 
+    def init_ui(self):
+        self.init_heading()
+        self.init_employee_view()
+        self.init_buttons()
+        
     def init_heading(self):
         self.heading = ttk.Label(
             self.root,
@@ -60,18 +51,21 @@ class App:
 
     def load_employees(self):
         try:
-            self.tree.delete(*self.tree.get_children())
-            employees = database.read_employees(self.cursor)
-
-            if not employees:
-                messagebox.showinfo("Info", "No employees found in database")
-                return
-            
-            for employee in employees:
-                self.tree.insert("", "end", values=employee)
-
-        except Exception as e:
-            messagebox.showerror("Database Error", f"Failed to load employees: {str(e)}")
+            response = requests.get(f"{self.api_url}/employees")
+            if response.status_code == 200:
+                employees = response.json()
+                self.tree.delete(*self.tree.get_children())
+                for emp in employees:
+                    self.tree.insert("", "end", values=(
+                        emp['employee_id'],
+                        emp['firstname'],
+                        emp['lastname'],
+                        emp['daily_rate']
+                    ))
+            else:
+                messagebox.showerror("Error", "Failed to load employees")
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Connection Error", f"Could not connect to server: {e}")
 
     def add_employee(self):
         self.popup = Toplevel(self.root)
@@ -96,17 +90,22 @@ class App:
         self.rate_entry.grid(row=3, column=1, padx=5, pady=10)
 
         def save():
-            firstname = self.fname_entry.get()
-            lastname = self.lname_entry.get()
+            data = {
+                "firstname": self.fname_entry.get(),
+                "lastname": self.lname_entry.get(),
+                "daily_rate": float(self.rate_entry.get())
+            }
             try:
-                daily_rate = float(self.rate_entry.get())
+                response = requests.post(f"{self.api_url}/employees", json=data)
+                if response.status_code == 201:
+                    self.load_employees()  # Refresh the list
+                    self.popup.destroy()
+                else:
+                    messagebox.showerror("Error", "Failed to add employee")
             except ValueError:
-                messagebox.showerror("Error", "First and last name are required")
-                return
-            
-            database.add_employee(self.conn, self.cursor, lastname, firstname, daily_rate)
-            self.load_employees()
-            self.popup.destroy()
+                messagebox.showerror("Error", "Daily rate must be a number")
+            except requests.exceptions.RequestException as e:
+                messagebox.showerror("Error", f"Server error: {e}")
 
         Button(self.popup, text="Save", command=save).grid(
             row=4, 
@@ -123,53 +122,57 @@ class App:
         employee_id = self.tree.item(selected[0])['values'][0]
 
         #Fetch current data
-        self.cursor.execute("SELECT * FROM employee WHERE employee_id=?", (employee_id,))
-        emp_data = self.cursor.fetchone()
-
-        if not emp_data:
-            messagebox.showerror("Error", "Employee not found")
-            return
-        
-        #Edit window
-        self.edit_popup = Toplevel(self.root)
-        self.edit_popup.title("Edit Employee")
-
-        Label(self.edit_popup, text="Edit Employee Daya...").grid(
-            row=0,
-            column=0,
-            padx=5,
-            pady=10
-        )
-
-        Label(self.edit_popup, text="First Name").grid(row=1, column=0)
-        fname_entry = Entry(self.edit_popup)
-        fname_entry.insert(0, emp_data[2])
-        fname_entry.grid(row=1, column=1, padx=5, pady=5)
-
-        Label(self.edit_popup, text="Last Name").grid(row=1, column=0)
-        lname_entry = Entry(self.edit_popup)
-        lname_entry.insert(0, emp_data[1])
-        lname_entry.grid(row=2, column=1, padx=5, pady=5)
-
-        Label(self.edit_popup, text="Daily Rate").grid(row=1, column=0)
-        rate_entry = Entry(self.edit_popup)
-        rate_entry.insert(0, emp_data[3])
-        rate_entry.grid(row=3, column=1, padx=5, pady=5)
-
-        def save():
-            new_first = fname_entry.get()
-            new_last = lname_entry.get()
-            try:
-                new_rate = float(rate_entry.get())
-            except ValueError:
-                messagebox.showerror("Error", "Daily rate must be a number")
+        try:
+            response = requests.get(f"{self.api_url}/employees/{employee_id}")
+            if response.status_code != 200:
+                messagebox.showerror("Error", "Employee not found")
                 return
-            
-            database.update_employees(self.conn, self.cursor, employee_id, new_last, new_first, new_rate)
-            self.load_employees()
-            self.edit_popup.destroy()
+                
+            emp_data = response.json()
+        
+            #Edit window
+            self.edit_popup = Toplevel(self.root)
+            self.edit_popup.title("Edit Employee")
 
-        Button(self.edit_popup, text="Save", command=save).grid(row=4, columnspan=2, pady=5)
+            Label(self.edit_popup, text="Edit Employee Daya...").grid(
+                row=0,
+                column=0,
+                padx=5,
+                pady=10
+            )
+
+            Label(self.edit_popup, text="First Name").grid(row=1, column=0)
+            fname_entry = Entry(self.edit_popup)
+            fname_entry.insert(0, emp_data[2])
+            fname_entry.grid(row=1, column=1, padx=5, pady=5)
+
+            Label(self.edit_popup, text="Last Name").grid(row=1, column=0)
+            lname_entry = Entry(self.edit_popup)
+            lname_entry.insert(0, emp_data[1])
+            lname_entry.grid(row=2, column=1, padx=5, pady=5)
+
+            Label(self.edit_popup, text="Daily Rate").grid(row=1, column=0)
+            rate_entry = Entry(self.edit_popup)
+            rate_entry.insert(0, emp_data[3])
+            rate_entry.grid(row=3, column=1, padx=5, pady=5)
+
+            def save():
+                new_first = fname_entry.get()
+                new_last = lname_entry.get()
+                try:
+                    new_rate = float(rate_entry.get())
+                except ValueError:
+                    messagebox.showerror("Error", "Daily rate must be a number")
+                    return
+                
+                database.update_employees(self.conn, self.cursor, employee_id, new_last, new_first, new_rate)
+                self.load_employees()
+                self.edit_popup.destroy()
+
+            Button(self.edit_popup, text="Save", command=save).grid(row=4, columnspan=2, pady=5)
+        
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Error", f"Could not connect to server: {e}")
 
     def delete_employee(self):
         selected= self.tree.selection()
@@ -182,9 +185,14 @@ class App:
         confirm = messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this employee?")
 
         if confirm:
-            database.delete_employee(self.conn, self.cursor, employee_id)
-            self.load_employees()
-
+            try:
+                response = requests.delete(f"{self.api_url}/employees/{employee_id}")
+                if response.status_code == 200:
+                    self.load_employees()  # Refresh the list
+                else:
+                    messagebox.showerror("Error", "Failed to delete employee")
+            except requests.exceptions.RequestException as e:
+                messagebox.showerror("Error", f"Server error: {e}")
 
 if __name__ == "__main__":
     app = App()
