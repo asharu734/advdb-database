@@ -69,10 +69,6 @@ class App:
             .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
             .grid(row=1, column=1, padx=5)
-        Button(self.button_frame, text="Generate Pay Record", command=self.generate_pay_record) \
-            .grid(row=1, column=2, padx=5)
-        Button(self.button_frame, text="Pay History", command=self.view_pay_history) \
-            .grid(row=1, column=3, padx=5)
 
     def load_employees(self):
         try:
@@ -420,84 +416,6 @@ class App:
                 
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Server error: {e}")
-
-    def generate_pay_record(self):
-        selected = self.tree.selection()
-        if not selected:
-            messagebox.showinfo("Wait", "Pick an employee first.")
-
-            return
-
-        emp_id, first, last, *_ = self.tree.item(selected[0], "values")
-
-        self.popup = Toplevel(self.root)
-        self.popup.title("Generate Pay Record")
-
-        Label(self.popup, text=f"Generate Pay Record for {first} {last}").grid(
-            row=0, column=0, columnspan=2, pady=10
-        )
-
-        Label(self.popup, text="Pay Period Start:").grid(row=1, column=0, sticky="e")
-        start_date = Entry(self.popup)
-        start_date.grid(row=1, column=1, padx=5, pady=5)
-
-        Label(self.popup, text="Pay Period End:").grid(row=2, column=0, sticky="e")
-        end_date = Entry(self.popup)
-        end_date.grid(row=2, column=1, padx=5, pady=5)
-
-        Label(self.popup, text="Gross Pay:").grid(row=3, column=0, sticky="e")
-        gross = Entry(self.popup)
-        gross.grid(row=3, column=1, padx=5, pady=5)
-
-        Label(self.popup, text="Deductions:").grid(row=4, column=0, sticky="e")
-        deductions = Entry(self.popup)
-        deductions.grid(row=4, column=1, padx=5, pady=5)
-
-        Label(self.popup, text="Net Pay:").grid(row=5, column=0, sticky="e")
-        net = Entry(self.popup)
-        net.grid(row=5, column=1, padx=5, pady=5)
-
-        def save_record():
-            # Placeholder — you’ll wire this into the DB later
-            messagebox.showinfo("Saved!", "Pay record generated (kinda).")
-            self.popup.destroy()
-
-        Button(self.popup, text="Save Pay Record", command=save_record).grid(
-            row=6, column=0, columnspan=2, pady=10
-        )
-
-
-    def view_pay_history(self):
-        selected = self.tree.selection()
-        if not selected:
-            messagebox.showinfo("Yo", "Pick an employee to view pay history.")
-
-            return
-
-        emp_id, first, last, *_ = self.tree.item(selected[0], "values")
-
-        self.popup = Toplevel(self.root)
-        self.popup.title(f"{first} {last} – Pay History")
-
-        Label(self.popup, text=f"Payroll history for {first} {last}").pack(pady=10)
-
-        history_tree = ttk.Treeview(self.popup, columns=("Start", "End", "Gross", "Deductions", "Net"), show="headings")
-        history_tree.heading("Start", text="Start Date")
-        history_tree.heading("End", text="End Date")
-        history_tree.heading("Gross", text="Gross Pay")
-        history_tree.heading("Deductions", text="Deductions")
-        history_tree.heading("Net", text="Net Pay")
-        history_tree.pack(fill="both", expand=True, padx=10, pady=10)
-
-        # Placeholder: This will be replaced with real data from DB
-        sample_data = [
-            ("2024-05-01", "2024-05-15", 15000.00, 2000.00, 13000.00),
-            ("2024-05-16", "2024-05-31", 16000.00, 1800.00, 14200.00),
-        ]
-
-        for row in sample_data:
-            history_tree.insert("", "end", values=row)
-
 
 if __name__ == "__main__":
     app = App()
