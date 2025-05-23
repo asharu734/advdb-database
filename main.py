@@ -59,7 +59,7 @@ def create_table(conn, cursor):
             FOREIGN KEY (attendance_log_id) REFERENCES ATTENDANCE_LOG(attendance_log_id)
         );
 
-    CREATE TABLE IF NOT EXISTS PAYROLL_DEDUTION
+    CREATE TABLE IF NOT EXISTS PAYROLL_DEDUCTION
         (
             payroll_id INTEGER NOT NULL,
             deduction_id INTEGER NOT NULL,
@@ -82,7 +82,7 @@ def create_table(conn, cursor):
 
     conn.commit()
 
-
+#CREATE
 def add_employee(conn, cursor, lastname, firstname, daily_rate):
     cursor.execute('INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)', (lastname, firstname, daily_rate))
     conn.commit()
@@ -108,15 +108,15 @@ def compute_attendance_hours(time_in_str, time_out_str):
 def add_attendance_log(conn, cursor, employee_id, project_id, time_in, time_out, date):
     attendance_hours = compute_attendance_hours(time_in, time_out)
 
-    if attendance_hours > 8:
-        overtime_hours = attendance_hours - 8
+    overtime_hours = attendance_hours - 8 if attendance_hours > 8 else 0
 
     cursor.execute('''
                     INSERT INTO attendance_log
-                        (employee_id, project_id, time_in, time_out. overtime_hours, date, attendance_hours)
+                        (employee_id, project_id, time_in, time_out, overtime_hours, date, attendance_hours)
                     VALUES
-                        (?, ?, ?, ?, ?, ?, ?)''', (employee_id, project_id, time_in, time_in, overtime_hours, date, attendance_hours))
-    conn.commit()
+                        (?, ?, ?, ?, ?, ?, ?)
+                ''', (employee_id, project_id, time_in, time_out, overtime_hours, date, attendance_hours))
+
     print(f"Added attendance for {date}")
 
 def add_deduction(conn, cursor, employee_id, deduction_type):
@@ -144,53 +144,161 @@ def add_payroll(conn, cursor, gross_salary, net_salary,
     conn.commit()
     print("Added new payroll")
 
-def add_payroll_deduction(conn, cursor, deduction_amount, payroll_id, deduction_id):
+def add_payroll_deduction(conn, cursor, payroll_id, deduction_id, deduction_amount):
     cursor.execute('''
-                   INSERT INTO deduction
-                       (deduction_amount, payroll_id, deduction_type)
+                   INSERT INTO payroll_deduction
+                       (payroll_id, deduction_id, deduction_amount)
                    VALUES
-                       (?, ?)
-                   ''', (deduction_amount, payroll_id, deduction_id))
+                       (?, ?, ?)
+                   ''', (payroll_id, deduction_id, deduction_amount))
     conn.commit()
     print(f"Added deduction {deduction_id}")
 
 
-def add_pay_record(conn, cursor, date_paid, paid_amount,
-                   employee_daily_rate, payroll_id):
+def add_pay_record(conn, cursor, payroll_id, date_paid, amount):
     cursor.execute('''
                    INSERT INTO pay_record
-                       (date_paid, paid_amount, employee_daily_rate,
-                        payroll_id)
+                       (payroll_id, date_paid, amount)
                    VALUES
-                       (?, ?, ?, ?)
-                   ''', (date_paid, paid_amount, employee_daily_rate,
-                         payroll_id))
+                       (?, ?, ?)
+                   ''', (payroll_id, date_paid, amount))
     conn.commit()
 
 
 # READ
 def read_employees(cursor):
-    cursor.execute('SELECT * FROM employees')
+    cursor.execute('SELECT * FROM employee')
+    employees = cursor.fetchall()
+    print("Employee Records:", employees)
+    return employees
+
+def read_projects(cursor):
+    cursor.execute('SELECT * FROM project')
+    return cursor.fetchall()
+
+def read_attendance_logs(cursor):
+    cursor.execute('SELECT * FROM attendance_log')
+    return cursor.fetchall()
+
+def read_deductions(cursor):
+    cursor.execute('SELECT * FROM deduction')
+    return cursor.fetchall()
+
+def read_payrolls(cursor):
+    cursor.execute('SELECT * FROM payroll')
+    return cursor.fetchall()
+
+def read_payroll_deductions(cursor):
+    cursor.execute('SELECT * FROM payroll_deduction')
+    return cursor.fetchall()
+
+def read_pay_records(cursor):
+    cursor.execute('SELECT * FROM pay_record')
     return cursor.fetchall()
 
 
 # UPDATE
-def update_employee(conn, cursor, employee_id, last_name, 
-                     first_name, daily_rate):
+def update_employees(conn, cursor, employee_id, lastname, 
+                     firstname, daily_rate):
     cursor.execute('''
-                   UPDATE users SET
-                   last_name = ?, first_name = ?, daily_rate = ?
+                   UPDATE employee SET
+                   lastname = ?, firstname = ?, daily_rate = ?
 
                    WHERE
-                   id = ?
-                   ''', (last_name, first_name, daily_rate, employee_id))
+                   employee_id = ?
+                   ''', (lastname, firstname, daily_rate, employee_id))
     conn.commit()
 
+def update_project(conn, cursor,  project_name, project_start, project_end):
+    cursor.execute('''
+                   UPDATE project SET
+                   project_name = ?, project_start = ?, project_end = ?
 
+                   WHERE
+                   project_id = ?
+                   ''', (project_name, project_start, project_end))
+    conn.commit()
+
+def update_attendance_log(conn, cursor,  employee_id, project_id,
+                     time_in, time_out, date):
+    cursor.execute('''
+                   UPDATE attendance_log SET
+                   employee_id = ?, project_id = ?, time_in = ?, time_out = ?
+
+                   WHERE
+                   attendance_log_id = ?
+                   ''', (employee_id, project_id, time_in, time_out, date))
+    conn.commit()
+
+def update_deduction(conn, cursor,  employee_id, deduction_type):
+    cursor.execute('''
+                   UPDATE deduction SET
+                   employee_id = ?, deduction_type = ?
+
+                   WHERE
+                   deduction_id = ?
+                   ''', (employee_id, deduction_type))
+    conn.commit()
+
+def update_payroll(conn, cursor,  gross_salary, net_salary,
+                     week_start, week_end, attendance_log_id):
+    #Since Harold isn't sure if this is correct, this also applies here.
+    cursor.execute('''
+                   UPDATE payroll SET
+                   gross_salary = ?, net_salary = ?, week_start = ?, week_end = ?, attendance_log_id = ?
+
+                   WHERE
+                   payroll_id = ?
+                   ''', (gross_salary, net_salary, week_start, week_end, attendance_log_id))
+    conn.commit()
+
+def update_payroll_deduction(conn, cursor,  payroll_id, deduction_id, deduction_amount):
+    cursor.execute('''
+                   UPDATE payroll_deduction SET
+                   payroll_id = ?, deduction_id = ?, deduction_amount = ?
+
+                   WHERE
+                   payroll_deduction_id = ?
+                   ''', (payroll_id, deduction_id, deduction_amount))
+    conn.commit()
+
+def update_pay_record(conn, cursor,  payroll_id, date_paid, amount):
+    cursor.execute('''
+                   UPDATE pay_record SET
+                   payroll_id = ?, date_paid = ?, amount = ?
+
+                   WHERE
+                   pay_record_id = ?
+                   ''', (payroll_id, date_paid, amount))
+    conn.commit()
 
 # DELETE
 def delete_employee(conn, cursor, employee_id):
-    cursor.execute('DELETE FROM employees WHERE id = ?', (employee_id))
+    cursor.execute('DELETE FROM employee WHERE employee_id = ?', (employee_id,))
+    conn.commit()
+
+def delete_project(conn, cursor, project_id):
+    cursor.execute('DELETE FROM project WHERE project_id = ?', (project_id,))
+    conn.commit()
+
+def delete_attendance_log(conn, cursor, attendance_log_id):
+    cursor.execute('DELETE FROM attendance_log WHERE attendance_log_id = ?', (attendance_log_id,))
+    conn.commit()
+
+def delete_deduction(conn, cursor, deduction_id):
+    cursor.execute('DELETE FROM deduction WHERE deduction_id = ?', (deduction_id,))
+    conn.commit()
+
+def delete_payroll(conn, cursor, payroll_id):
+    cursor.execute('DELETE FROM payroll WHERE payroll_id = ?', (payroll_id,))
+    conn.commit()
+
+def delete_payroll_deduction(conn, cursor, payroll_deduction_id):
+    cursor.execute('DELETE FROM payroll_deduction WHERE payroll_deduction_id = ?', (payroll_deduction_id,))
+    conn.commit()
+
+def delete_pay_record(conn, cursor, pay_record_id):
+    cursor.execute('DELETE FROM pay_record WHERE pay_record_id = ?', (pay_record_id,))
     conn.commit()
 
 
@@ -205,6 +313,11 @@ def main():
 
     create_table(conn, cursor)
 
+
+    read_employees(cursor)
+
+# for edample
+# print(reaed_employees)
 
 if __name__ == '__main__':
     main()
