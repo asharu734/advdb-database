@@ -282,20 +282,23 @@ class App:
         print("Selected:", emp_data)  # placeholder
         messagebox.showinfo("Selection", f"You picked: {emp_data[1]} {emp_data[2]}")
 
-            try:
-                response = requests.delete(f"{self.api_url}/employees/{employee_id}")
-                if response.status_code == 200:
-                    self.load_employees()  # Refresh the list
-                else:
-                    messagebox.showerror("Error", "Failed to delete employee")
-            except requests.exceptions.RequestException as e:
-                messagebox.showerror("Error", f"Server error: {e}")
+        try:
+            response = requests.delete(f"{self.api_url}/employees/{employee_id}")
+            if response.status_code == 200:
+                self.load_employees()  # Refresh the list
+                
+            else:
+                messagebox.showerror("Error", "Failed to delete employee")
+
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Error", f"Server error: {e}")
 
 
     def view_attendance(self):
         selected = self.tree.selection()
         if not selected:
             messagebox.showinfo("Hmm", "Pick an employee first.")
+
             return
 
         emp_id = self.tree.item(selected[0], "values")[0]
@@ -323,6 +326,7 @@ class App:
         selected = self.tree.selection()
         if not selected:
             messagebox.showinfo("Oops", "Pick an employee first.")
+
             return
 
         emp_id, first, last, *_ = self.tree.item(selected[0], "values")
@@ -372,6 +376,7 @@ class App:
         selected = self.tree.selection()
         if not selected:
             messagebox.showinfo("Wait", "Pick an employee first.")
+
             return
 
         emp_id, first, last, *_ = self.tree.item(selected[0], "values")
@@ -417,6 +422,7 @@ class App:
         selected = self.tree.selection()
         if not selected:
             messagebox.showinfo("Yo", "Pick an employee to view pay history.")
+
             return
 
         emp_id, first, last, *_ = self.tree.item(selected[0], "values")
