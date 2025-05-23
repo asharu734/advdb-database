@@ -9,6 +9,15 @@ class App:
     def __init__(self):
         self.root = Tk()
 
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill="both", expand=True)
+
+        self.employee_tab = Frame(self.notebook)
+        self.notebook.add(self.employee_tab, text="Employees")
+
+        self.project_tab = Frame(self.notebook)
+        self.notebook.add(self.project_tab, text="Projects")
+
         version = "0.0.11"
         self.root.title(f"Employee Payroll Management System v{version}")
 
@@ -23,15 +32,17 @@ class App:
         self.init_employee_view()
         self.init_buttons()
         
+
     def init_heading(self):
         self.heading = ttk.Label(
-            self.root,
+            self.employee_tab,
             text="Select Employee...")
         self.heading.pack(fill="x", padx=10, pady=5)
 
+
     def init_employee_view(self):
         self.tree = ttk.Treeview(
-            self.root,
+            self.employee_tab,
             columns=("ID", "First", "Last", "Rate"),
             show="headings")
         self.tree.heading("ID", text="ID")
@@ -42,7 +53,7 @@ class App:
 
 
     def init_buttons(self):
-        self.button_frame = Frame(self.root)
+        self.button_frame = Frame(self.employee_tab)
         self.button_frame.pack(pady=10)
 
         Button(self.button_frame, text="Add...", command=self.add_employee) \
