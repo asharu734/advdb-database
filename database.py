@@ -36,7 +36,7 @@ def create_table(conn, cursor):
             overtime_hours REAL DEFAULT 0,
             date DATE NOT NULL,
             attendance_hours REAL,
-            PRIMARY KEY(employee_id, project]_id),
+            PRIMARY KEY(employee_id, project_id),
             FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id),
             FOREIGN KEY (project_id) REFERENCES PROJECT(project_id)
         );
@@ -314,12 +314,6 @@ def main():
         exit()
 
     create_table(conn, cursor)
-
-
-    read_employees(cursor)
-
-# for edample
-# print(reaed_employees)
 
 if __name__ == '__main__':
     main()
