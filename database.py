@@ -303,6 +303,11 @@ def delete_pay_record(conn, cursor, pay_record_id):
     cursor.execute('DELETE FROM pay_record WHERE pay_record_id = ?', (pay_record_id,))
     conn.commit()
 
+def get_user_by_username(cursor, username):
+    query = "SELECT * FROM employee WHERE firstname = ?"
+    cursor.execute(query, (username,))
+    return cursor.fetchone()
+
 
 def main():
     database = "payroll_app.db"

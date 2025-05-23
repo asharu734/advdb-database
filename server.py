@@ -4,10 +4,13 @@ from flask_cors import CORS
 import sqlite3
 import os
 import bcrypt
+from database import create_connection, create_table
+from auth.auth_routes import auth_bp
 from datetime import datetime
 
 
 app = Flask(__name__)
+app.register_blueprint(auth_bp, url_prefix="/auth")
 CORS(app)
 
 def hash_password(password):
@@ -297,28 +300,6 @@ def get_project_deployments(project_id):
         return jsonify([dict(row) for row in deployments])
     finally:
         conn.close()
-
-@app.route('/api/deployments/employee/<int:employee_id>')
-def get_employee_deployments(employee_id):
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    
-    query = '''
-        SELECT d.*, p.project_name
-        FROM deployment_list d
-        JOIN project p ON d.project_id = p.project_id
-        WHERE d.employee_id = ?
-    '''
-    params = [employee_id]
-    
-    if start_date and end_date:
-        query += ' AND date BETWEEN ? AND ?'
-        params.extend([start_date, end_date])
-    
-    conn = get_db_connection()
-    deployments = conn.execute(query, params).fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in deployments])
 
 # PAYROLL ENDPOINTS
 @app.route('/api/payroll', methods=['POST'])
