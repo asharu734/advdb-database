@@ -183,6 +183,20 @@ def delete_project(project_id):
         return jsonify({"error": "Project not found"}), 404
 
 # DEPLOYMENT ENDPOINTS
+@app.route('/api/deployments/employee/<int:employee_id>', methods=['GET'])
+def get_employee_deployments(employee_id):
+    conn = get_db_connection()
+    try:
+        deployments = conn.execute('''
+            SELECT d.*, p.project_name
+            FROM deployment_list d
+            JOIN project p ON d.project_id = p.project_id
+            WHERE d.employee_id = ?
+        ''', (employee_id,)).fetchall()
+        return jsonify([dict(row) for row in deployments])
+    finally:
+        conn.close()
+
 @app.route('/api/deployments', methods=['POST'])
 def add_deployment():
     data = request.json
@@ -204,6 +218,20 @@ def add_deployment():
         return jsonify({'status': 'success'}), 201
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
+    finally:
+        conn.close()
+
+@app.route('/api/deployments/project/<int:project_id>', methods=['GET'])
+def get_project_deployments(project_id):
+    conn = get_db_connection()
+    try:
+        deployments = conn.execute('''
+            SELECT d.*, e.firstname, e.lastname
+            FROM deployment_list d
+            JOIN employee e ON d.employee_id = e.employee_id
+            WHERE d.project_id = ?
+        ''', (project_id,)).fetchall()
+        return jsonify([dict(row) for row in deployments])
     finally:
         conn.close()
 

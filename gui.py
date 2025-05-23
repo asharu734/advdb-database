@@ -64,8 +64,8 @@ class App:
             .grid(row=0, column=1, padx=5)
         Button(self.button_frame, text="Delete", command=self.delete_employee) \
             .grid(row=0, column=2, padx=5)
-        Button(self.button_frame, text="View Attendance", command=self.view_attendance) \
-            .grid(row=1, column=0, padx=5)
+        Button(self.button_frame, text="Project Assignments", command=self.view_project_assignments) \
+            .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
             .grid(row=1, column=1, padx=5)
         Button(self.button_frame, text="Generate Pay Record", command=self.generate_pay_record) \
@@ -221,33 +221,44 @@ class App:
             except requests.exceptions.RequestException as e:
                 messagebox.showerror("Error", f"Server error: {e}")
 
-    def view_attendance(self):
+    def view_project_assignments(self):
         selected = self.tree.selection()
         if not selected:
-            messagebox.showinfo("Hmm", "Pick an employee first.")
-
+            messagebox.showwarning("Warning", "Please select an employee first")
             return
-
-        emp_id = self.tree.item(selected[0], "values")[0]
-        logs = [
-            log for log in database.read_attendance_logs(self.cursor)
-            if str(log[1]) == str(emp_id)
-        ]
-
+        
+        employee_id, first, last, _ = self.tree.item(selected[0], "values")
+        
         popup = Toplevel(self.root)
-        popup.title("Attendance Logs")
-
-        tree = ttk.Treeview(popup, columns=("Project", "Date", "In", "Out", "Hours", "OT"), show="headings")
-        for col in tree["columns"]:
-            tree.heading(col, text=col)
-        tree.pack(fill="both", expand=True, padx=10, pady=10)
-
-        for log in logs:
-            project_id = log[2]
-            # optiMight resolve project name from project_id
-            project_name = f"#{project_id}"  # placeholder
-            tree.insert("", "end", values=(project_name, log[6], log[3], log[4], log[7], log[5]))
-
+        popup.title(f"{first} {last} - Project Assignments")
+        
+        try:
+            response = requests.get(f"{self.api_url}/deployments/employee/{employee_id}")
+            if response.status_code != 200:
+                messagebox.showerror("Error", "Failed to load assignments")
+                return
+            
+            tree = ttk.Treeview(popup, columns=("Project", "Date", "Time In", "Time Out", "Hours", "OT"), show="headings")
+            tree.heading("Project", text="Project")
+            tree.heading("Date", text="Date")
+            tree.heading("Time In", text="Time In")
+            tree.heading("Time Out", text="Time Out")
+            tree.heading("Hours", text="Hours")
+            tree.heading("OT", text="Overtime")
+            tree.pack(fill="both", expand=True, padx=10, pady=10)
+            
+            for assignment in response.json():
+                tree.insert("", "end", values=(
+                    assignment['project_name'],
+                    assignment['date'],
+                    assignment['time_in'],
+                    assignment['time_out'],
+                    assignment['attendance_hours'],
+                    assignment['overtime_hours']
+                ))
+                
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Error", f"Could not connect to server: {e}")
 
     def calculate_payroll(self):
         selected = self.tree.selection()
@@ -279,16 +290,16 @@ class App:
         def calculate():
             # Placeholder results – replace with real logic later
             results = f"""
-    Employee: {first} {last}
-    Start Date: {start_date.get()}
-    End Date: {end_date.get()}
-    Days Worked: ???
-    Total Hours: ???
-    Overtime: ???
-    Gross Pay: ???
-    Deductions: ???
-    Net Pay: ???
-    """
+                Employee: {first} {last}
+                Start Date: {start_date.get()}
+                End Date: {end_date.get()}
+                Days Worked: ???
+                Total Hours: ???
+                Overtime: ???
+                Gross Pay: ???
+                Deductions: ???
+                Net Pay: ???
+            """
             result_box.config(state="normal")
             result_box.delete("1.0", END)
             result_box.insert("1.0", results)
