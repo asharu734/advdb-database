@@ -73,11 +73,6 @@ class App:
             .grid(row=1, column=2, padx=5)
         Button(self.button_frame, text="Pay History", command=self.view_pay_history) \
             .grid(row=1, column=3, padx=5)
-        Button(
-            self.button_frame, 
-            text="Projects", 
-            command=lambda: ProjectManager(self.root, self.api_url)) \
-        .grid(row=2, column=0, padx=5)
 
 
     def load_employees(self):
