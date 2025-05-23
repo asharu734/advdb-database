@@ -125,6 +125,21 @@ def employees():
     finally:
         conn.close()
 
+@app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
+def delete_employee(employee_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM employee WHERE employee_id = ?", (employee_id,))
+    conn.commit()
+    affected_rows = cursor.rowcount
+    conn.close()
+    
+    if affected_rows > 0:
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"error": "Employee not found"}), 404
+
 # PROJECT ENDPOINTS
 @app.route('/api/projects', methods=['GET', 'POST'])
 def projects():
@@ -151,6 +166,21 @@ def projects():
             }), 201
     finally:
         conn.close()
+
+@app.route('/api/projects/<int:project_id>', methods=['DELETE'])
+def delete_project(project_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM project WHERE project_id = ?", (project_id,))
+    conn.commit()
+    affected_rows = cursor.rowcount
+    conn.close()
+    
+    if affected_rows > 0:
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"error": "Project not found"}), 404
 
 # DEPLOYMENT ENDPOINTS
 @app.route('/api/deployments', methods=['POST'])
@@ -207,6 +237,59 @@ def create_payroll():
         return jsonify({'payroll_id': payroll_id}), 201
     finally:
         conn.close()
+
+@app.route('/api/payroll/<int:payroll_id>', methods=['DELETE'])
+def delete_payroll(payroll_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM payroll WHERE payroll_id = ?", (payroll_id,))
+    conn.commit()
+    affected_rows = cursor.rowcount
+    conn.close()
+    
+    if affected_rows > 0:
+        return jsonify({"status": "success"}), 200
+    else:
+        return jsonify({"error": "Employee not found"}), 404
+
+# DEDUCTION ENDPOINTS
+@app.route('/api/deductions', methods=['GET', 'POST'])
+def deductions():
+    if request.method == 'GET':
+        conn = get_db_connection()
+        deductions = conn.execute('SELECT * FROM deduction').fetchall()
+        conn.close()
+        return jsonify([dict(row) for row in deductions])
+    
+    elif request.method == 'POST':
+        data = request.json
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO deduction (employee_id, deduction_type) VALUES (?, ?)',
+            (data['employee_id'], data['deduction_type'])
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({'deduction_id': cursor.lastrowid}), 201
+
+# PAY RECORD ENDPOINTS
+@app.route('/api/payrecords', methods=['POST'])
+def add_pay_record():
+    data = request.json
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''INSERT INTO pay_record 
+        (employee_id, date_paid, amount, reference_number)
+        VALUES (?, ?, ?, ?)''',
+        (data['employee_id'], data['date_paid'], 
+         data['amount'], data['reference_number'])
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({'pay_id': cursor.lastrowid}), 201
 
 # Initialize and run the server
 if __name__ == '__main__':
