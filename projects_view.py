@@ -43,7 +43,7 @@ class ProjectManager(Frame):
 
 
     def add_project(self):
-        popup = Toplevel(self.root)
+        popup = Toplevel(self.winfo_toplevel())
         popup.title("New Project")
 
         Label(popup, text="Project Name:").pack(pady=5)

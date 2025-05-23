@@ -25,7 +25,10 @@ def init_db():
         firstname TEXT NOT NULL,
         daily_rate REAL NOT NULL
     );
-    -- (Add other tables as needed)
+    CREATE TABLE IF NOT EXISTS PROJECT (
+        project_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_name TEXT NOT NULL
+    );
     ''')
     conn.commit()
     conn.close()
@@ -47,6 +50,28 @@ def employees():
         cursor.execute(
             "INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)",
             (data['lastname'], data['firstname'], data['daily_rate'])
+        )
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "id": cursor.lastrowid}), 201
+
+# Project API
+@app.route('/api/projects', methods=['GET', 'POST'])
+def projects():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    if request.method == 'GET':
+        cursor.execute("SELECT * FROM project")
+        employees = cursor.fetchall()
+        conn.close()
+        return jsonify([dict(row) for row in employees])
+    
+    elif request.method == 'POST':
+        data = request.json
+        cursor.execute(
+            "INSERT INTO project (project_name) VALUES (?)",
+            (data['project_name'])
         )
         conn.commit()
         conn.close()
