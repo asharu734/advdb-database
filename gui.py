@@ -5,6 +5,7 @@ from projects_view import ProjectManager
 import database
 import requests
 
+
 class App:
     def __init__(self):
         self.root = Tk()
@@ -15,7 +16,7 @@ class App:
         self.employee_tab = Frame(self.notebook)
         self.notebook.add(self.employee_tab, text="Employees")
 
-        self.project_tab = Frame(self.notebook)
+        self.project_tab = ProjectManager(self.notebook, self.api_url)
         self.notebook.add(self.project_tab, text="Projects")
 
         version = "0.0.11"
@@ -97,6 +98,7 @@ class App:
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Connection Error", f"Could not connect to server: {e}")
 
+
     def add_employee(self):
         self.popup = Toplevel(self.root)
         self.popup.title("New Employee")
@@ -143,6 +145,7 @@ class App:
             pady=5
         )
     
+
     def edit_employee(self):
         selected = self.tree.selection()
         if not selected:
@@ -204,6 +207,7 @@ class App:
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Could not connect to server: {e}")
 
+
     def delete_employee(self):
         selected= self.tree.selection()
         if not selected:
@@ -216,75 +220,6 @@ class App:
 
         if confirm:
             database.delete_employee(self.conn, self.cursor, employee_id)
-            self.load_employees()
-
-    def edit_employee(self):
-        selected = self.tree.selection()
-        if not selected:
-            messagebox.showinfo("Nah", "Pick an employee to edit.")
-
-            return
-        
-        employee_id, first, last, rate = self.tree.item(selected[0], "values")
-
-        self.popup = Toplevel(self.root)
-        self.popup.title("Edit Employee")
-
-        Label(self.popup, text="Edit Employee data...").grid(
-            row=0, 
-            column=0,
-            padx=5,
-            pady=10)
-
-        Label(self.popup, text="First Name").grid(row=0, column=0)
-        fname = Entry(self.popup)
-        fname.insert(0, first)
-        fname.grid(row=1, column=1, padx=5, pady=10)
-
-        Label(self.popup, text="Last Name").grid(row=1, column=0)
-        lname = Entry(self.popup)
-        lname.insert(0, last)
-        lname.grid(row=2, column=1, padx=5, pady=10)
-
-        Label(self.popup, text="Daily Rate").grid(row=2, column=0)
-        rate_entry = Entry(self.popup)
-        rate_entry.insert(0, rate)
-        rate_entry.grid(row=3, column=1, padx=5, pady=10)
-
-        def save():
-            try:
-                database.update_employees(
-                    self.conn, 
-                    self.cursor, 
-                    employee_id, 
-                    lname.get(), 
-                    fname.get(), 
-                    float(rate_entry.get()))
-                self.load_employees()
-                self.popup.destroy()
-
-            except ValueError:
-                messagebox.showerror("Oops", "Missing info, duh.")
-
-        Button(self.popup, text="Save", command=save).grid(
-            row=4, 
-            columnspan=2,
-            pady=5
-        )
-
-
-    def delete_employee(self):
-        selected = self.tree.selection()
-        if not selected:
-            messagebox.showinfo("Nuh uh", "Pick an employee to delete.")
-
-            return
-
-        emp_id, first, last, *_ = self.tree.item(selected[0], "values")
-
-        confirm = messagebox.askyesno("Confirm Delete", f"Delete {first} {last}?")
-        if confirm:
-            database.delete_employee(self.conn, self.cursor, emp_id)
             self.load_employees()
 
 

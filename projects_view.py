@@ -12,6 +12,7 @@ class ProjectManager:
         self.init_ui()
         self.load_projects()
 
+
     def init_ui(self):
         Label(self.root, text="Project List").pack(pady=5)
 
