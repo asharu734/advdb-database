@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk, messagebox
 from tkinter import filedialog
+from config import api_base_url
 from projects_view import ProjectManager
 import database
 import requests
@@ -10,7 +11,7 @@ class App:
     def __init__(self):
         self.root = Tk()
 
-        self.api_url = "http://localhost:5000/api"  # Change to server IP if needed
+        self.api_url = api_base_url  
 
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True)
@@ -63,8 +64,6 @@ class App:
             .grid(row=0, column=1, padx=5)
         Button(self.button_frame, text="Delete", command=self.delete_employee) \
             .grid(row=0, column=2, padx=5)
-        Button(self.button_frame, text="Ok", command=self.confirm_selection) \
-            .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="View Attendance", command=self.view_attendance) \
             .grid(row=1, column=0, padx=5)
         Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
@@ -73,12 +72,6 @@ class App:
             .grid(row=1, column=2, padx=5)
         Button(self.button_frame, text="Pay History", command=self.view_pay_history) \
             .grid(row=1, column=3, padx=5)
-        Button(
-            self.button_frame, 
-            text="Projects", 
-            command=lambda: ProjectManager(self.root, self.api_url)) \
-        .grid(row=2, column=0, padx=5)
-
 
     def load_employees(self):
         try:
@@ -167,7 +160,7 @@ class App:
             self.edit_popup = Toplevel(self.root)
             self.edit_popup.title("Edit Employee")
 
-            Label(self.edit_popup, text="Edit Employee Daya...").grid(
+            Label(self.edit_popup, text="Edit Employee Data...").grid(
                 row=0,
                 column=0,
                 padx=5,
@@ -219,32 +212,14 @@ class App:
         confirm = messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this employee?")
 
         if confirm:
-            database.delete_employee(self.conn, self.cursor, employee_id)
-            self.load_employees()
-
-
-    def confirm_selection(self):
-        selected = self.tree.selection()
-        if not selected:
-            messagebox.showinfo("Hmm", "Select an employee, then hit Ok.")
-
-            return
-        
-        emp_data = self.tree.item(selected[0], "values")
-        print("Selected:", emp_data)  # placeholder
-        messagebox.showinfo("Selection", f"You picked: {emp_data[1]} {emp_data[2]}")
-
-        try:
-            response = requests.delete(f"{self.api_url}/employees/{employee_id}")
-            if response.status_code == 200:
-                self.load_employees()  # Refresh the list
-
-            else:
-                messagebox.showerror("Error", "Failed to delete employee")
-
-        except requests.exceptions.RequestException as e:
-            messagebox.showerror("Error", f"Server error: {e}")
-
+            try:
+                response = requests.delete(f"{self.api_url}/employees/{employee_id}")
+                if response.status_code == 200:
+                    self.load_employees()  # Refresh the list
+                else:
+                    messagebox.showerror("Error", "Failed to delete employee")
+            except requests.exceptions.RequestException as e:
+                messagebox.showerror("Error", f"Server error: {e}")
 
     def view_attendance(self):
         selected = self.tree.selection()
