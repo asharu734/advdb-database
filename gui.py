@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk, messagebox
 from tkinter import filedialog
+from tkcalendar import DateEntry
 from config import api_base_url
 from projects_view import ProjectManager
 import database
@@ -263,52 +264,162 @@ class App:
     def calculate_payroll(self):
         selected = self.tree.selection()
         if not selected:
-            messagebox.showinfo("Oops", "Pick an employee first.")
-
+            messagebox.showwarning("Warning", "Please select an employee first")
             return
 
-        emp_id, first, last, *_ = self.tree.item(selected[0], "values")
+        emp_id, first, last, daily_rate = self.tree.item(selected[0], "values")
 
-        self.popup = Toplevel(self.root)
-        self.popup.title("Calculate Payroll")
+        self.payroll_popup = Toplevel(self.root)
+        self.payroll_popup.title(f"Payroll Calculation - {first} {last}")
+        self.payroll_popup.geometry("500x600")
 
-        Label(self.popup, text=f"Payroll for {first} {last}").grid(
+        # Input Frame
+        input_frame = Frame(self.payroll_popup)
+        input_frame.pack(pady=10)
+
+        Label(input_frame, text=f"Payroll for {first} {last} (Rate: ₱{daily_rate}/day)").grid(
             row=0, column=0, columnspan=2, pady=10
         )
 
-        Label(self.popup, text="Start Date (YYYY-MM-DD):").grid(row=1, column=0, sticky="e")
-        start_date = Entry(self.popup)
-        start_date.grid(row=1, column=1, padx=5, pady=5)
+        # Date Range
+        Label(input_frame, text="Start Date (YYYY-MM-DD):").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        self.start_date_entry = DateEntry(input_frame, date_pattern='yyyy-mm-dd')
+        self.start_date_entry.grid(row=1, column=1, padx=5, pady=5)
 
-        Label(self.popup, text="End Date (YYYY-MM-DD):").grid(row=2, column=0, sticky="e")
-        end_date = Entry(self.popup)
-        end_date.grid(row=2, column=1, padx=5, pady=5)
+        Label(input_frame, text="End Date (YYYY-MM-DD):").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+        self.end_date_entry = DateEntry(input_frame, date_pattern='yyyy-mm-dd')
+        self.end_date_entry.grid(row=2, column=1, padx=5, pady=5)
 
-        result_box = Text(self.popup, height=10, width=40, state="disabled")
-        result_box.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
+        # Deductions
+        Label(input_frame, text="Deductions:").grid(row=3, column=0, sticky="e", padx=5, pady=5)
+        self.deductions_entry = Entry(input_frame)
+        self.deductions_entry.insert(0, "0")
+        self.deductions_entry.grid(row=3, column=1, padx=5, pady=5)
 
-        def calculate():
-            # Placeholder results – replace with real logic later
+        # Calculate Button
+        Button(input_frame, text="Calculate Payroll", command=lambda: self._perform_payroll_calculation(
+            emp_id, first, last, daily_rate
+        )).grid(row=4, columnspan=2, pady=10)
+
+        # Results Frame
+        results_frame = Frame(self.payroll_popup)
+        results_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.results_text = Text(results_frame, height=15, width=60, state="disabled")
+        self.results_text.pack(fill="both", expand=True)
+
+        # Save Button
+        Button(self.payroll_popup, text="Save Payroll Record", 
+            command=lambda: self._save_payroll_record(emp_id)).pack(pady=10)
+
+    def _perform_payroll_calculation(self, emp_id, first, last, daily_rate):
+        try:
+            start_date = self.start_date_entry.get_date().isoformat()
+            end_date = self.end_date_entry.get_date().isoformat()
+            deductions = float(self.deductions_entry.get())
+            
+            # Get time logs for the period
+            response = requests.get(
+                f"{self.api_url}/deployments/employee/{emp_id}",
+                params={"start_date": start_date, "end_date": end_date}
+            )
+            
+            if response.status_code != 200:
+                messagebox.showerror("Error", "Failed to fetch time logs")
+                return
+                
+            time_logs = response.json()
+            
+            if not time_logs:
+                messagebox.showinfo("Info", "No time logs found for this period")
+                return
+                
+            # Calculate totals
+            total_days = len({log['date'] for log in time_logs})
+            total_hours = sum(log['attendance_hours'] for log in time_logs)
+            total_ot = sum(log['overtime_hours'] for log in time_logs)
+            
+            # Calculate pay
+            daily_rate = float(daily_rate)
+            regular_pay = total_days * daily_rate
+            ot_pay = total_ot * (daily_rate / 8 * 1.25)  # Assuming 1.25x OT rate
+            gross_pay = regular_pay + ot_pay
+            net_pay = gross_pay - deductions
+            
+            # Format results
             results = f"""
-                Employee: {first} {last}
-                Start Date: {start_date.get()}
-                End Date: {end_date.get()}
-                Days Worked: ???
-                Total Hours: ???
-                Overtime: ???
-                Gross Pay: ???
-                Deductions: ???
-                Net Pay: ???
+            PAYROLL CALCULATION REPORT
+            =========================
+            Employee: {first} {last}
+            Employee ID: {emp_id}
+            Period: {start_date} to {end_date}
+            
+            ------------
+            WORK SUMMARY
+            ------------
+            Days Worked: {total_days}
+            Total Hours: {total_hours:.2f}
+            Overtime Hours: {total_ot:.2f}
+            
+            ---------
+            EARNINGS
+            ---------
+            Regular Pay ({total_days} days × ₱{daily_rate}): ₱{regular_pay:,.2f}
+            Overtime Pay: ₱{ot_pay:,.2f}
+            Gross Pay: ₱{gross_pay:,.2f}
+            
+            -----------
+            DEDUCTIONS
+            -----------
+            Total Deductions: ₱{deductions:,.2f}
+            
+            --------
+            NET PAY
+            --------
+            Net Pay: ₱{net_pay:,.2f}
             """
-            result_box.config(state="normal")
-            result_box.delete("1.0", END)
-            result_box.insert("1.0", results)
-            result_box.config(state="disabled")
+            
+            # Store calculations for saving later
+            self._current_payroll_calc = {
+                "employee_id": emp_id,
+                "gross_salary": gross_pay,
+                "net_salary": net_pay,
+                "week_start": start_date,
+                "week_end": end_date,
+                "deductions": deductions
+            }
+            
+            # Display results
+            self.results_text.config(state="normal")
+            self.results_text.delete("1.0", END)
+            self.results_text.insert("1.0", results)
+            self.results_text.config(state="disabled")
+            
+        except ValueError as e:
+            messagebox.showerror("Error", f"Invalid input: {e}")
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Error", f"Server error: {e}")
 
-        Button(self.popup, text="Calculate", command=calculate).grid(
-            row=3, column=0, columnspan=2, pady=5
-        )
-
+    def _save_payroll_record(self, emp_id):
+        if not hasattr(self, '_current_payroll_calc'):
+            messagebox.showwarning("Warning", "Please calculate payroll first")
+            return
+            
+        try:
+            # Save to database
+            response = requests.post(
+                f"{self.api_url}/payroll",
+                json=self._current_payroll_calc
+            )
+            
+            if response.status_code == 201:
+                messagebox.showinfo("Success", "Payroll record saved successfully")
+                self.payroll_popup.destroy()
+            else:
+                messagebox.showerror("Error", "Failed to save payroll record")
+                
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Error", f"Server error: {e}")
 
     def generate_pay_record(self):
         selected = self.tree.selection()
