@@ -10,15 +10,20 @@ class App:
         version = "0.0.3"
         self.root.title(f"Employee Payroll Management System v{version}")
 
-        self.db_name = "payroll.db" # Ano ilalagay dito
+        self.db_name = "payroll_app.db"
         self.conn = database.create_connection(self.db_name)
+        if self.conn is None:
+            messagebox.showerror("Error", "Could not connect to database")
+            self.root.destroy()
+            return
+        
         self.cursor = self.conn.cursor()
+        database.create_table(self.conn, self.cursor) #Ensures the table exists
 
         self.init_heading()
         self.init_employee_view()
         self.init_buttons()
-        # self.load_employees()
-        # This doesn't work yet
+        self.load_employees()
 
 
     def init_heading(self):
@@ -44,19 +49,26 @@ class App:
         self.button_frame.pack(pady=10)
 
         Button(self.button_frame, text="Add...", command=self.add_employee).grid(row=0, column=0, padx=5)
-        Button(self.button_frame, text="Edit").grid(row=0, column=1, padx=5)
-        Button(self.button_frame, text="Delete").grid(row=0, column=2, padx=5)
+        Button(self.button_frame, text="Edit", command=self.edit_employee).grid(row=0, column=1, padx=5)
+        Button(self.button_frame, text="Delete", command=self.delete_employee).grid(row=0, column=2, padx=5)
         Button(self.button_frame, text="Ok").grid(row=0, column=3, padx=5)
 
 
     def load_employees(self):
-        self.tree.delete(*self.tree.get_children())
+        try:
+            self.tree.delete(*self.tree.get_children())
+            employees = database.read_employees(self.cursor)
 
-        self.employees = database.read_employees(self.cursor)
-        for employee_id, first, last, rate in self.employees:
-            self.tree.insert("", "end", values=(employee_id, first, last, rate))
+            if not employees:
+                messagebox.showinfo("Info", "No employees found in database")
+                return
+            
+            for employee in employees:
+                self.tree.insert("", "end", values=employee)
 
-    
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Failed to load employees: {str(e)}")
+
     def add_employee(self):
         self.popup = Toplevel(self.root)
         self.popup.title("New Employee")
@@ -68,27 +80,106 @@ class App:
             pady=10)
 
         Label(self.popup, text="First Name").grid(row=1, column=0)
-        fname = Entry(self.popup)
-        fname.grid(row=1, column=1, padx=5, pady=10)
+        self.fname_entry = Entry(self.popup)
+        self.fname_entry.grid(row=1, column=1, padx=5, pady=10)
 
         Label(self.popup, text="Last Name").grid(row=2, column=0)
-        lname = Entry(self.popup)
-        lname.grid(row=2, column=1, padx=5, pady=10)
+        self.lname_entry = Entry(self.popup)
+        self.lname_entry.grid(row=2, column=1, padx=5, pady=10)
 
         Label(self.popup, text="Daily Rate").grid(row=3, column=0)
-        rate = Entry(self.popup)
-        rate.grid(row=3, column=1, padx=5, pady=10)
+        self.rate_entry = Entry(self.popup)
+        self.rate_entry.grid(row=3, column=1, padx=5, pady=10)
 
         def save():
-            pass 
-            # Function in a function, wtf man
+            firstname = self.fname_entry.get()
+            lastname = self.lname_entry.get()
+            try:
+                daily_rate = float(self.rate_entry.get())
+            except ValueError:
+                messagebox.showerror("Error", "First and last name are required")
+                return
+            
+            database.add_employee(self.conn, self.cursor, lastname, firstname, daily_rate)
+            self.load_employees()
+            self.popup.destroy()
 
         Button(self.popup, text="Save", command=save).grid(
             row=4, 
             columnspan=2,
             pady=5
         )
+    
+    def edit_employee(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Please select an employee to edit")
+            return
+        
+        employee_id = self.tree.item(selected[0])['values'][0]
 
+        #Fetch current data
+        self.cursor.execute("SELECT * FROM employee WHERE employee_id=?", (employee_id))
+        emp_data = self.cursor.fetchone()
+
+        if not emp_data:
+            messagebox.showerror("Error", "Employee not found")
+            return
+        
+        #Edit window
+        self.edit_popup = Toplevel(self.root)
+        self.edit_popup.title("Edit Employee")
+
+        Label(self.edit_popup, text="Edit Employee Daya...").grid(
+            row=0,
+            column=0,
+            padx=5,
+            pady=10
+        )
+
+        Label(self.edit_popup, text="First Name").grid(row=1, column=0)
+        fname_entry = Entry(self.edit_popup)
+        fname_entry.insert(0, emp_data[2])
+        fname_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        Label(self.edit_popup, text="Last Name").grid(row=1, column=0)
+        lname_entry = Entry(self.edit_popup)
+        lname_entry.insert(0, emp_data[1])
+        lname_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        Label(self.edit_popup, text="Daily Rate").grid(row=1, column=0)
+        rate_entry = Entry(self.edit_popup)
+        rate_entry.insert(0, emp_data[3])
+        rate_entry.grid(row=3, column=1, padx=5, pady=5)
+
+        def save():
+            new_first = fname_entry.get()
+            new_last = lname_entry.get()
+            try:
+                new_rate = float(rate_entry.get())
+            except ValueError:
+                messagebox.showerror("Error", "Daily rate must be a number")
+                return
+            
+            database.update_employees(self.conn, self.cursor, employee_id, new_last, new_first, new_rate)
+            self.load_employees()
+            self.edit_popup.destroy()
+
+            Button(self.edit_popup, text="Save", command=save).grid(row=4, columnspan=2, pady=5)
+
+    def delete_employee(self):
+        selected= self.tree.selection()
+        if not selected:
+            messagebox.showwarning("Warning", "Please select an employee to delete")
+            return
+        
+        employee_id = self.tree.item(selected[0])['values'][0]
+
+        confirm = messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this employee?")
+
+        if confirm:
+            database.delete_employee(self.conn, self.cursor, employee_id)
+            self.load_employees()
 
 
 if __name__ == "__main__":
