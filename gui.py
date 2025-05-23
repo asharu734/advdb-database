@@ -53,7 +53,9 @@ class App:
         Button(self.button_frame, text="Ok", command=self.confirm_selection) \
             .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="View Attendance", command=self.view_attendance) \
-            .grid(row=0, column=4, padx=5)
+            .grid(row=1, column=1, padx=5)
+        Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
+            .grid(row=1, column=2, padx=5)
 
 
     def load_employees(self):
@@ -311,6 +313,55 @@ class App:
             # optiMight resolve project name from project_id
             project_name = f"#{project_id}"  # placeholder
             tree.insert("", "end", values=(project_name, log[6], log[3], log[4], log[7], log[5]))
+
+
+    def calculate_payroll(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("Oops", "Pick an employee first.")
+            return
+
+        emp_id, first, last, *_ = self.tree.item(selected[0], "values")
+
+        self.popup = Toplevel(self.root)
+        self.popup.title("Calculate Payroll")
+
+        Label(self.popup, text=f"Payroll for {first} {last}").grid(
+            row=0, column=0, columnspan=2, pady=10
+        )
+
+        Label(self.popup, text="Start Date (YYYY-MM-DD):").grid(row=1, column=0, sticky="e")
+        start_date = Entry(self.popup)
+        start_date.grid(row=1, column=1, padx=5, pady=5)
+
+        Label(self.popup, text="End Date (YYYY-MM-DD):").grid(row=2, column=0, sticky="e")
+        end_date = Entry(self.popup)
+        end_date.grid(row=2, column=1, padx=5, pady=5)
+
+        result_box = Text(self.popup, height=10, width=40, state="disabled")
+        result_box.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
+
+        def calculate():
+            # Placeholder results – replace with real logic later
+            results = f"""
+    Employee: {first} {last}
+    Start Date: {start_date.get()}
+    End Date: {end_date.get()}
+    Days Worked: ???
+    Total Hours: ???
+    Overtime: ???
+    Gross Pay: ???
+    Deductions: ???
+    Net Pay: ???
+    """
+            result_box.config(state="normal")
+            result_box.delete("1.0", END)
+            result_box.insert("1.0", results)
+            result_box.config(state="disabled")
+
+        Button(self.popup, text="Calculate", command=calculate).grid(
+            row=3, column=0, columnspan=2, pady=5
+        )
 
 
 if __name__ == "__main__":
