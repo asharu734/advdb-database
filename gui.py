@@ -7,7 +7,7 @@ class App:
     def __init__(self):
         self.root = Tk()
 
-        version = "0.0.3"
+        version = "0.0.11"
         self.root.title(f"Employee Payroll Management System v{version}")
 
         self.db_name = "payroll.db" # Ano ilalagay dito
@@ -17,8 +17,8 @@ class App:
         self.init_heading()
         self.init_employee_view()
         self.init_buttons()
-        # self.load_employees()
-        # This doesn't work yet
+        self.load_employees()
+        # Careful with this one
 
 
     def init_heading(self):
@@ -43,10 +43,14 @@ class App:
         self.button_frame = Frame(self.root)
         self.button_frame.pack(pady=10)
 
-        Button(self.button_frame, text="Add...", command=self.add_employee).grid(row=0, column=0, padx=5)
-        Button(self.button_frame, text="Edit").grid(row=0, column=1, padx=5)
-        Button(self.button_frame, text="Delete").grid(row=0, column=2, padx=5)
-        Button(self.button_frame, text="Ok").grid(row=0, column=3, padx=5)
+        Button(self.button_frame, text="Add...", command=self.add_employee) \
+            .grid(row=0, column=0, padx=5)
+        Button(self.button_frame, text="Edit", command=self.edit_employee) \
+            .grid(row=0, column=1, padx=5)
+        Button(self.button_frame, text="Delete", command=self.delete_employee) \
+            .grid(row=0, column=2, padx=5)
+        Button(self.button_frame, text="Ok", command=self.confirm_selection) \
+            .grid(row=0, column=3, padx=5)
 
 
     def load_employees(self):
@@ -80,8 +84,18 @@ class App:
         rate.grid(row=3, column=1, padx=5, pady=10)
 
         def save():
-            pass 
-            # Function in a function, wtf man
+            try:
+                database.add_employee(
+                    self.conn, 
+                    self.cursor,
+                      lname.get(), 
+                      fname.get(), 
+                      float(rate.get()))
+                self.load_employees()
+                self.popup.destroy()
+
+            except ValueError:
+                messagebox.showerror("Oops", "Missing info, duh.")
 
         Button(self.popup, text="Save", command=save).grid(
             row=4, 
@@ -89,6 +103,87 @@ class App:
             pady=5
         )
 
+
+    def edit_employee(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("Nah", "Pick an employee to edit.")
+
+            return
+        
+        employee_id, first, last, rate = self.tree.item(selected[0], "values")
+
+        self.popup = Toplevel(self.root)
+        self.popup.title("Edit Employee")
+
+        Label(self.popup, text="Edit Employee data...").grid(
+            row=0, 
+            column=0,
+            padx=5,
+            pady=10)
+
+        Label(self.popup, text="First Name").grid(row=0, column=0)
+        fname = Entry(self.popup)
+        fname.insert(0, first)
+        fname.grid(row=1, column=1, padx=5, pady=10)
+
+        Label(self.popup, text="Last Name").grid(row=1, column=0)
+        lname = Entry(self.popup)
+        lname.insert(0, last)
+        lname.grid(row=2, column=1, padx=5, pady=10)
+
+        Label(self.popup, text="Daily Rate").grid(row=2, column=0)
+        rate_entry = Entry(self.popup)
+        rate_entry.insert(0, rate)
+        rate_entry.grid(row=3, column=1, padx=5, pady=10)
+
+        def save():
+            try:
+                database.update_employees(
+                    self.conn, 
+                    self.cursor, 
+                    employee_id, 
+                    lname.get(), 
+                    fname.get(), 
+                    float(rate_entry.get()))
+                self.load_employees()
+                self.popup.destroy()
+
+            except ValueError:
+                messagebox.showerror("Oops", "Missing info, duh.")
+
+        Button(self.popup, text="Save", command=save).grid(
+            row=4, 
+            columnspan=2,
+            pady=5
+        )
+
+
+    def delete_employee(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("Nuh uh", "Pick an employee to delete.")
+
+            return
+
+        emp_id, first, last, *_ = self.tree.item(selected[0], "values")
+
+        confirm = messagebox.askyesno("Confirm Delete", f"Delete {first} {last}?")
+        if confirm:
+            database.delete_employee(self.conn, self.cursor, emp_id)
+            self.load_employees()
+
+
+    def confirm_selection(self):
+        selected = self.tree.selection()
+        if not selected:
+            messagebox.showinfo("Hmm", "Select an employee, then hit Ok.")
+
+            return
+        
+        emp_data = self.tree.item(selected[0], "values")
+        print("Selected:", emp_data)  # placeholder
+        messagebox.showinfo("Selection", f"You picked: {emp_data[1]} {emp_data[2]}")
 
 
 if __name__ == "__main__":
