@@ -2,11 +2,15 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from tkinter import filedialog
 import database
+import requests
 
 class App:
     def __init__(self):
         self.root = Tk()
-
+        self.root.title("Payroll System (Client)")
+        self.api_url = "http://localhost:5000/api"  # Change to server IP if needed
+        self.init_ui()
+        self.load_employees()
         version = "0.0.3"
         self.root.title(f"Employee Payroll Management System v{version}")
 
@@ -119,7 +123,7 @@ class App:
         employee_id = self.tree.item(selected[0])['values'][0]
 
         #Fetch current data
-        self.cursor.execute("SELECT * FROM employee WHERE employee_id=?", (employee_id))
+        self.cursor.execute("SELECT * FROM employee WHERE employee_id=?", (employee_id,))
         emp_data = self.cursor.fetchone()
 
         if not emp_data:
@@ -165,7 +169,7 @@ class App:
             self.load_employees()
             self.edit_popup.destroy()
 
-            Button(self.edit_popup, text="Save", command=save).grid(row=4, columnspan=2, pady=5)
+        Button(self.edit_popup, text="Save", command=save).grid(row=4, columnspan=2, pady=5)
 
     def delete_employee(self):
         selected= self.tree.selection()
