@@ -5,6 +5,7 @@ import sqlite3
 import os
 import bcrypt
 from database import create_connection, create_table
+from utils import get_db_connection, hash_password, check_password
 from auth.auth_routes import auth_bp
 from datetime import datetime
 

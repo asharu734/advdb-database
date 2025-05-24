@@ -4,6 +4,7 @@ from tkinter import filedialog
 from tkcalendar import DateEntry
 from config import api_base_url
 from projects_view import ProjectManager
+import tkinter as tk
 import database
 import requests
 
@@ -421,7 +422,65 @@ class App:
                 
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Server error: {e}")
+    
+    def generate_pay_record(self):
+        print("Generate Pay Record button clicked.") # Placeholder -J
+
+    def view_pay_history(self):
+        print("Generate Pay Record button clicked.")
+
+    API_URL = "http://127.0.0.1:5000/auth/login"  # Matches the route registered in auth_routes.py
+
+    def show_super_admin_dashboard(self):
+        win = tk.Toplevel()
+        win.title("Super Admin Dashboard")
+        tk.Label(win, text="Welcome, Super Admin!", font=("Arial", 16)).pack(pady=20)
+
+    def show_admin_dashboard(self):
+        win = tk.Toplevel()
+        win.title("Admin Dashboard")
+        tk.Label(win, text="Welcome, Admin!", font=("Arial", 16)).pack(pady=20)
+
+    def show_login_window(self):
+        root = tk.Tk()
+        root.title("Login")
+
+        tk.Label(root, text="Username:").grid(row=0, column=0, padx=10, pady=10)
+        username_entry = tk.Entry(root)
+        username_entry.grid(row=0, column=1)
+
+        tk.Label(root, text="Password:").grid(row=1, column=0, padx=10, pady=10)
+        password_entry = tk.Entry(root, show="*")
+        password_entry.grid(row=1, column=1)
+
+        def login(self):
+            username = username_entry.get()
+            password = password_entry.get()
+
+            try:
+                response = requests.post(API_URL, json={"username": username, "password": password})
+                if response.status_code == 200:
+                    data = response.json()
+                    role = data.get("role")
+
+                    root.destroy()  # Close the login window
+
+                    if role == "super_admin":
+                        show_super_admin_dashboard()
+                    elif role == "admin":
+                        show_admin_dashboard()
+                    else:
+                        messagebox.showerror("Login Error", f"Unknown role: {role}")
+                else:
+                    messagebox.showerror("Login Failed", response.json().get("error", "Unknown error"))
+            except requests.exceptions.RequestException as e:
+                messagebox.showerror("Connection Error", str(e))
+
+        tk.Button(root, text="Login", command=login).grid(row=2, columnspan=2, pady=10)
+        root.mainloop()
+
 
 if __name__ == "__main__":
     app = App()
+    app.show_login_window()
     app.root.mainloop()

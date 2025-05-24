@@ -1,18 +1,20 @@
 from flask import Blueprint, request, jsonify
-from werkzeug.security import check_password_hash
-from auth.jwt_utils import create_token
-from database import get_user_by_username  # You’ll need to implement this
+from jwt_utils import generate_token
+from utils import get_db_connection, hash_password, check_password
 
-auth_bp = Blueprint("auth", __name__)
+auth_bp = Blueprint('auth', __name__)
 
-@auth_bp.route("/login", methods=["POST"])
+@auth_bp.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
 
-    user = get_user_by_username(username)
-    if user and check_password_hash(user["password_hash"], password):
-        token = create_token({"username": username})
-        return jsonify({"access_token": token}), 200
-    return jsonify({"error": "Invalid credentials"}), 401
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM user WHERE username = ?', (username,)).fetchone()
+    conn.close()
+
+    if user and check_password(password, user['password']):
+        token = generate_token(user['user_id'], user['role'])
+        return jsonify({'token': token, 'role': user['role']}), 200
+    return jsonify({'error': 'Invalid credentials'}), 401
