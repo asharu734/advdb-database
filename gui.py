@@ -1,10 +1,8 @@
 from tkinter import *
 from tkinter import ttk, messagebox
-from tkinter import filedialog
 from tkcalendar import DateEntry
 from config import api_base_url
 from projects_view import ProjectManager
-import tkinter as tk
 import database
 import requests
 
@@ -430,7 +428,5 @@ class App:
         print("Generate Pay Record button clicked.")
 
 if __name__ == "__main__":
-    login = LoginApp()
-    login.show_login_window()
     app = App()
     app.root.mainloop()

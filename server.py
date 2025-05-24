@@ -3,7 +3,9 @@ from flask_cors import CORS
 import sqlite3
 import os
 from datetime import datetime
-
+import jwt
+from werkzeug.security import generate_password_hash, check_password_hash
+from functools import wraps
 
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +23,13 @@ def init_db():
     cursor = conn.cursor()
     
     cursor.executescript('''
+        CREATE TABLE IF NOT EXISTS USER (
+            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            role TEXT CHECK(role IN ('admin', 'super_admin')) NOT NULL
+        );
+              
     CREATE TABLE IF NOT EXISTS EMPLOYEE (
         employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
         lastname TEXT NOT NULL,
@@ -87,6 +96,94 @@ def init_db():
     conn.commit()
     conn.close()
 
+SECRET_KEY = "your-secret-key"  # Store securely in production
+
+def seed_default_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Check if any users already exist
+    user = cursor.execute('SELECT * FROM USER WHERE username = ?', ('admin',)).fetchone()
+    if not user:
+        cursor.execute('''
+            INSERT INTO USER (username, password_hash, role)
+            VALUES (?, ?, ?)
+        ''', ('admin', generate_password_hash('admin123'), 'super_admin'))
+
+    conn.commit()
+    conn.close()
+
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+
+    conn = get_db_connection()
+    user = conn.execute('SELECT * FROM USER WHERE username = ?', (username,)).fetchone()
+    conn.close()
+
+    if user and check_password_hash(user['password_hash'], password):
+        token = jwt.encode({
+            'user_id': user['user_id'],
+            'username': user['username'],
+            'role': user['role']
+        }, SECRET_KEY, algorithm='HS256')
+        return jsonify({'token': token})
+    
+    return jsonify({'error': 'Invalid credentials'}), 401
+
+def authorize(allowed_roles):
+    def wrapper(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith('Bearer '):
+                return jsonify({'error': 'Unauthorized'}), 401
+            
+            token = auth_header.split()[1]
+            try:
+                decoded = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+                if decoded['role'] not in allowed_roles:
+                    return jsonify({'error': 'Forbidden'}), 403
+                request.user = decoded
+            except jwt.ExpiredSignatureError:
+                return jsonify({'error': 'Token expired'}), 401
+            except jwt.InvalidTokenError:
+                return jsonify({'error': 'Invalid token'}), 401
+
+            return f(*args, **kwargs)
+        return decorated
+    return wrapper
+
+@app.route('/api/users', methods=['POST'])
+@authorize(['super_admin'])
+def create_user():
+    data = request.json
+    username = data.get('username')
+    password = data.get('password')
+    role = data.get('role')
+
+    if not username or not password or role not in ['admin', 'super_admin']:
+        return jsonify({'error': 'Invalid input'}), 400
+
+    password_hash = generate_password_hash(password)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+            INSERT INTO USER (username, password_hash, role)
+            VALUES (?, ?, ?)
+        ''', (username, password_hash, role))
+        conn.commit()
+        return jsonify({'user_id': cursor.lastrowid, 'username': username, 'role': role}), 201
+    except sqlite3.IntegrityError:
+        return jsonify({'error': 'Username already exists'}), 409
+    finally:
+        conn.close()
+
 # Helper function to compute attendance hours
 def compute_attendance_hours(time_in_str, time_out_str):
     time_format = "%H:%M"
@@ -102,6 +199,7 @@ def compute_attendance_hours(time_in_str, time_out_str):
 
 # EMPLOYEE ENDPOINTS
 @app.route('/api/employees', methods=['GET', 'POST'])
+@authorize(['super_admin', 'admin'])
 def employees():
     conn = get_db_connection()
     try:
@@ -127,6 +225,7 @@ def employees():
         conn.close()
 
 @app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
+@authorize(['super_admin'])
 def delete_employee(employee_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -143,6 +242,7 @@ def delete_employee(employee_id):
 
 # PROJECT ENDPOINTS
 @app.route('/api/projects', methods=['GET', 'POST'])
+@authorize(['super_admin', 'admin'])
 def projects():
     conn = get_db_connection()
     try:
@@ -169,6 +269,7 @@ def projects():
         conn.close()
 
 @app.route('/api/projects/<int:project_id>', methods=['DELETE'])
+@authorize(['super_admin'])
 def delete_project(project_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -185,6 +286,7 @@ def delete_project(project_id):
 
 # DEPLOYMENT ENDPOINTS
 @app.route('/api/deployments/employee/<int:employee_id>', methods=['GET'])
+@authorize(['super_admin', 'admin'])
 def get_employee_deployments(employee_id):
     conn = get_db_connection()
     try:
@@ -199,6 +301,7 @@ def get_employee_deployments(employee_id):
         conn.close()
 
 @app.route('/api/deployments', methods=['POST'])
+@authorize(['super_admin', 'admin'])
 def add_deployment():
     data = request.json
     try:
@@ -223,6 +326,7 @@ def add_deployment():
         conn.close()
 
 @app.route('/api/deployments/project/<int:project_id>', methods=['GET'])
+@authorize(['super_admin', 'admin'])
 def get_project_deployments(project_id):
     conn = get_db_connection()
     try:
@@ -236,30 +340,9 @@ def get_project_deployments(project_id):
     finally:
         conn.close()
 
-@app.route('/api/deployments/employee/<int:employee_id>')
-def get_employee_deployments(employee_id):
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    
-    query = '''
-        SELECT d.*, p.project_name
-        FROM deployment_list d
-        JOIN project p ON d.project_id = p.project_id
-        WHERE d.employee_id = ?
-    '''
-    params = [employee_id]
-    
-    if start_date and end_date:
-        query += ' AND date BETWEEN ? AND ?'
-        params.extend([start_date, end_date])
-    
-    conn = get_db_connection()
-    deployments = conn.execute(query, params).fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in deployments])
-
 # PAYROLL ENDPOINTS
 @app.route('/api/payroll', methods=['POST'])
+@authorize(['super_admin', 'admin'])
 def create_payroll():
     data = request.json
     conn = get_db_connection()
@@ -290,6 +373,7 @@ def create_payroll():
         conn.close()
 
 @app.route('/api/payroll/<int:payroll_id>', methods=['DELETE'])
+@authorize(['super_admin'])
 def delete_payroll(payroll_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -306,6 +390,7 @@ def delete_payroll(payroll_id):
 
 # DEDUCTION ENDPOINTS
 @app.route('/api/deductions', methods=['GET', 'POST'])
+@authorize(['super_admin'])
 def deductions():
     if request.method == 'GET':
         conn = get_db_connection()
@@ -327,6 +412,7 @@ def deductions():
 
 # PAY RECORD ENDPOINTS
 @app.route('/api/payrecords', methods=['POST'])
+@authorize(['super_admin', 'admin'])
 def add_pay_record():
     data = request.json
     conn = get_db_connection()
