@@ -8,10 +8,12 @@ import requests
 
 
 class App:
-    def __init__(self):
-        self.root = Tk()
+    def __init__(self, token, role):
+        self.token = token
+        self.role = role
 
-        self.api_url = api_base_url  
+        self.root = Tk()
+        self.api_url = api_base_url
 
         self.notebook = ttk.Notebook(self.root)
         self.notebook.pack(fill="both", expand=True)
@@ -471,15 +473,16 @@ class Login:
             messagebox.showerror("Error", f"Could not connect to server.\n{e}")
 
 if __name__ == "__main__":
-    root = Tk()
+    login_root = Tk()
 
     def start_app(token_data):
-        # Optional: store token/role in a global or pass to App
-        app = App()
-        app.root = root  # use same root window
-        app.token = token_data['token']
-        app.role = token_data.get('role', 'admin')  # save role if needed
+        login_root.destroy()  # Close the login window
+        token = token_data['token']
+        role = token_data.get('role', 'admin')
+
+        app = App(token, role)  # Pass token and role
         app.root.mainloop()
 
-    Login(root, on_login_success=start_app)
-    root.mainloop()
+    Login(login_root, on_login_success=start_app)
+    login_root.mainloop()
+
