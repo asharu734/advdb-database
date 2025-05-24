@@ -204,9 +204,8 @@ def compute_attendance_hours(time_in_str, time_out_str):
 def get_employee():
     conn = get_db_connection()
     try:
-        if request.method == 'GET':
-            employees = conn.execute('SELECT * FROM employee').fetchall()
-            return jsonify([dict(row) for row in employees])
+        employees = conn.execute('SELECT * FROM employee').fetchall()
+        return jsonify([dict(row) for row in employees])
     finally:
         conn.close()
 
@@ -215,23 +214,21 @@ def get_employee():
 def add_employee():
     conn = get_db_connection()
     try:
-        if request.method == 'POST':
-            data = request.json
-            cursor = conn.cursor()
-            cursor.execute(
-                'INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)',
-                (data['lastname'], data['firstname'], data['daily_rate'])
-            )
-            conn.commit()
-            return jsonify({
-                'id': cursor.lastrowid,
-                'lastname': data['lastname'],
-                'firstname': data['firstname'],
-                'daily_rate': data['daily_rate']
-            }), 201
+        data = request.json
+        cursor = conn.cursor()
+        cursor.execute(
+            'INSERT INTO employee (lastname, firstname, daily_rate) VALUES (?, ?, ?)',
+            (data['lastname'], data['firstname'], data['daily_rate'])
+        )
+        conn.commit()
+        return jsonify({
+            'id': cursor.lastrowid,
+            'lastname': data['lastname'],
+            'firstname': data['firstname'],
+            'daily_rate': data['daily_rate']
+        }), 201
     finally:
         conn.close()
-
 
 @app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
 @authorize(['super_admin'])
@@ -254,9 +251,8 @@ def delete_employee(employee_id):
 def projects():
     conn = get_db_connection()
     try:
-        if request.method == 'GET':
-            projects = conn.execute('SELECT * FROM project').fetchall()
-            return jsonify([dict(row) for row in projects])
+        projects = conn.execute('SELECT * FROM project').fetchall()
+        return jsonify([dict(row) for row in projects])
     finally:
         conn.close()
 
@@ -265,21 +261,20 @@ def projects():
 def add_project():
     conn = get_db_connection()
     try:
-        if request.method == 'POST':
-            data = request.json
-            cursor = conn.cursor()
-            cursor.execute(
-                '''INSERT INTO project 
-                (project_name, project_start, project_end, budget) 
-                VALUES (?, ?, ?, ?)''',
-                (data['project_name'], data.get('project_start'), 
-                 data.get('project_end'), data.get('budget', 0))
-            )
-            conn.commit()
-            return jsonify({
-                'project_id': cursor.lastrowid,
-                'project_name': data['project_name']
-            }), 201
+        data = request.json
+        cursor = conn.cursor()
+        cursor.execute(
+            '''INSERT INTO project 
+            (project_name, project_start, project_end, budget) 
+            VALUES (?, ?, ?, ?)''',
+            (data['project_name'], data.get('project_start'), 
+                data.get('project_end'), data.get('budget', 0))
+        )
+        conn.commit()
+        return jsonify({
+            'project_id': cursor.lastrowid,
+            'project_name': data['project_name']
+        }), 201
     finally:
         conn.close()
 
