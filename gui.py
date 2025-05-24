@@ -29,6 +29,13 @@ class App:
 
         self.init_ui()
         self.load_employees()
+        if self.role == "super_admin":
+            # Show everything
+            pass
+        else:
+            # Disable or hide admin-only features
+            self.button_frame.grid_slaves(row=0, column=2)[0].config(state=DISABLED)  # Disable Delete
+
 
 
     def init_ui(self):
@@ -124,7 +131,14 @@ class App:
                 "daily_rate": float(self.rate_entry.get())
             }
             try:
-                response = requests.post(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
+                response = requests.post(
+                    f"{self.api_url}/employees",
+                    headers={
+                        "Authorization": f"Bearer {self.token}",
+                        "Content-Type": "application/json"
+                    },
+                    json=data
+                )
                 if response.status_code == 201:
                     self.load_employees()  # Refresh the list
                     self.popup.destroy()
