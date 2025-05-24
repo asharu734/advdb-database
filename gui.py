@@ -4,7 +4,6 @@ from tkinter import filedialog
 from tkcalendar import DateEntry
 from config import api_base_url
 from projects_view import ProjectManager
-import tkinter as tk
 import database
 import requests
 
@@ -70,11 +69,6 @@ class App:
             .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
             .grid(row=1, column=1, padx=5)
-        Button(self.button_frame, text="Generate Pay Record", command=self.generate_pay_record) \
-            .grid(row=1, column=2, padx=5)
-        Button(self.button_frame, text="Pay History", command=self.view_pay_history) \
-            .grid(row=1, column=3, padx=5)
-
 
     def load_employees(self):
         try:
@@ -422,15 +416,7 @@ class App:
                 
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Server error: {e}")
-    
-    def generate_pay_record(self):
-        print("Generate Pay Record button clicked.") # Placeholder -J
-
-    def view_pay_history(self):
-        print("Generate Pay Record button clicked.")
 
 if __name__ == "__main__":
-    login = LoginApp()
-    login.show_login_window()
     app = App()
     app.root.mainloop()
