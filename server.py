@@ -1,8 +1,8 @@
-from functools import wraps
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import sqlite3
 import os
+<<<<<<< HEAD
 import bcrypt
 from database import create_connection, create_table
 from utils import get_db_connection, hash_password, check_password
@@ -13,11 +13,15 @@ import hashlib
 import base64
 import json
 import time
+=======
+from datetime import datetime
+>>>>>>> parent of a2d847f (implemented authentication on server)
 
 app = Flask(__name__)
 app.register_blueprint(auth_bp, url_prefix="/auth")
 CORS(app)
 
+<<<<<<< HEAD
 # Token settings
 SECRET_KEY = b'your_super_secret_key_here'  # Replace with a strong key
 
@@ -72,6 +76,8 @@ def require_role(allowed_roles):
     return decorator
 
 
+=======
+>>>>>>> parent of a2d847f (implemented authentication on server)
 # Database configuration
 DB_PATH = os.path.abspath("payroll_app.db")
 
@@ -85,13 +91,6 @@ def init_db():
     cursor = conn.cursor()
     
     cursor.executescript('''
-    CREATE TABLE IF NOT EXISTS USER (
-        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL,
-        role TEXT NOT NULL CHECK(role IN ('super_admin', 'admin'))
-    );                     
-    
     CREATE TABLE IF NOT EXISTS EMPLOYEE (
         employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
         lastname TEXT NOT NULL,
@@ -158,35 +157,6 @@ def init_db():
     conn.commit()
     conn.close()
 
-# User management endpoints (super_admin only)
-@app.route('/api/users', methods=['GET', 'POST'])
-@require_role(['super_admin'])
-def manage_users():
-    if request.method == 'GET':
-        conn = get_db_connection()
-        users = conn.execute('SELECT user_id, username, role FROM user').fetchall()
-        conn.close()
-        return jsonify([dict(row) for row in users])
-    
-    elif request.method == 'POST':
-        data = request.json
-        if data['role'] not in ['super_admin', 'admin']:
-            return jsonify({'error': 'Invalid role'}), 400
-            
-        hashed_pw = hash_password(data['password'])
-        conn = get_db_connection()
-        try:
-            conn.execute(
-                'INSERT INTO user (username, password, role) VALUES (?, ?, ?)',
-                (data['username'], hashed_pw, data['role'])
-            )
-            conn.commit()
-            return jsonify({'status': 'user created'}), 201
-        except sqlite3.IntegrityError:
-            return jsonify({'error': 'Username already exists'}), 400
-        finally:
-            conn.close()
-
 # Helper function to compute attendance hours
 def compute_attendance_hours(time_in_str, time_out_str):
     time_format = "%H:%M"
@@ -202,7 +172,6 @@ def compute_attendance_hours(time_in_str, time_out_str):
 
 # EMPLOYEE ENDPOINTS
 @app.route('/api/employees', methods=['GET', 'POST'])
-@require_role(['super_admin', 'admin'])
 def employees():
     conn = get_db_connection()
     try:
@@ -228,7 +197,6 @@ def employees():
         conn.close()
 
 @app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
-@require_role(['super_admin'])
 def delete_employee(employee_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -245,7 +213,6 @@ def delete_employee(employee_id):
 
 # PROJECT ENDPOINTS
 @app.route('/api/projects', methods=['GET', 'POST'])
-@require_role(['super_admin', 'admin'])
 def projects():
     conn = get_db_connection()
     try:
@@ -272,7 +239,6 @@ def projects():
         conn.close()
 
 @app.route('/api/projects/<int:project_id>', methods=['DELETE'])
-@require_role(['super_admin'])
 def delete_project(project_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -289,7 +255,6 @@ def delete_project(project_id):
 
 # DEPLOYMENT ENDPOINTS
 @app.route('/api/deployments/employee/<int:employee_id>', methods=['GET'])
-@require_role(['super_admin', 'admin'])
 def get_employee_deployments(employee_id):
     conn = get_db_connection()
     try:
@@ -304,7 +269,6 @@ def get_employee_deployments(employee_id):
         conn.close()
 
 @app.route('/api/deployments', methods=['POST'])
-@require_role(['super_admin', 'admin'])
 def add_deployment():
     data = request.json
     try:
@@ -342,9 +306,30 @@ def get_project_deployments(project_id):
     finally:
         conn.close()
 
+@app.route('/api/deployments/employee/<int:employee_id>')
+def get_employee_deployments(employee_id):
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    
+    query = '''
+        SELECT d.*, p.project_name
+        FROM deployment_list d
+        JOIN project p ON d.project_id = p.project_id
+        WHERE d.employee_id = ?
+    '''
+    params = [employee_id]
+    
+    if start_date and end_date:
+        query += ' AND date BETWEEN ? AND ?'
+        params.extend([start_date, end_date])
+    
+    conn = get_db_connection()
+    deployments = conn.execute(query, params).fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in deployments])
+
 # PAYROLL ENDPOINTS
 @app.route('/api/payroll', methods=['POST'])
-@require_role(['super_admin', 'admin'])
 def create_payroll():
     data = request.json
     conn = get_db_connection()
@@ -375,7 +360,6 @@ def create_payroll():
         conn.close()
 
 @app.route('/api/payroll/<int:payroll_id>', methods=['DELETE'])
-@require_role(['super_admin'])
 def delete_payroll(payroll_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -392,7 +376,6 @@ def delete_payroll(payroll_id):
 
 # DEDUCTION ENDPOINTS
 @app.route('/api/deductions', methods=['GET', 'POST'])
-@require_role(['super_admin', 'admin'])
 def deductions():
     if request.method == 'GET':
         conn = get_db_connection()
@@ -414,7 +397,6 @@ def deductions():
 
 # PAY RECORD ENDPOINTS
 @app.route('/api/payrecords', methods=['POST'])
-@require_role(['super_admin', 'admin'])
 def add_pay_record():
     data = request.json
     conn = get_db_connection()
@@ -430,6 +412,7 @@ def add_pay_record():
     conn.close()
     return jsonify({'pay_id': cursor.lastrowid}), 201
 
+<<<<<<< HEAD
 # Registration and Login Endpoints
 @app.route('/api/register', methods=['POST'])
 def register():
@@ -489,6 +472,8 @@ def seed_default_users():
     conn.commit()
     conn.close()
 
+=======
+>>>>>>> parent of a2d847f (implemented authentication on server)
 # Initialize and run the server
 if __name__ == '__main__':
     seed_default_users()

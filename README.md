@@ -22,6 +22,10 @@ network
 
 packages needed
 pip install flask flask-cors
+<<<<<<< HEAD
 pip install tkcalendar
 pip install bcrypt
 pip install PyJWT
+=======
+pip install tkcalendar
+>>>>>>> parent of a2d847f (implemented authentication on server)
