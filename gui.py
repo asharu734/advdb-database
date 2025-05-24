@@ -124,7 +124,7 @@ class App:
                 "daily_rate": float(self.rate_entry.get())
             }
             try:
-                response = requests.post(f"{self.api_url}/employees", json=data)
+                response = requests.post(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
                 if response.status_code == 201:
                     self.load_employees()  # Refresh the list
                     self.popup.destroy()
@@ -152,7 +152,7 @@ class App:
 
         #Fetch current data
         try:
-            response = requests.get(f"{self.api_url}/employees/{employee_id}")
+            response = requests.get(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
             if response.status_code != 200:
                 messagebox.showerror("Error", "Employee not found")
                 return
@@ -216,7 +216,7 @@ class App:
 
         if confirm:
             try:
-                response = requests.delete(f"{self.api_url}/employees/{employee_id}")
+                response = requests.delete(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
                 if response.status_code == 200:
                     self.load_employees()  # Refresh the list
                 else:
@@ -236,7 +236,7 @@ class App:
         popup.title(f"{first} {last} - Project Assignments")
         
         try:
-            response = requests.get(f"{self.api_url}/deployments/employee/{employee_id}")
+            response = requests.get(f"{self.api_url}/deployments/employee/{employee_id}", headers={"Authorization": f"Bearer {self.token}"})
             if response.status_code != 200:
                 messagebox.showerror("Error", "Failed to load assignments")
                 return
@@ -323,6 +323,7 @@ class App:
             # Get time logs for the period
             response = requests.get(
                 f"{self.api_url}/deployments/employee/{emp_id}",
+                headers={"Authorization": f"Bearer {self.token}"},
                 params={"start_date": start_date, "end_date": end_date}
             )
             
@@ -411,6 +412,7 @@ class App:
             # Save to database
             response = requests.post(
                 f"{self.api_url}/payroll",
+                headers={"Authorization": f"Bearer {self.token}"},
                 json=self._current_payroll_calc
             )
             
