@@ -127,8 +127,10 @@ class ProjectManager(Frame):
         if not selected:
             messagebox.showwarning("Warning", "Please select a project first")
             return
-        
-        project_id, project_name = self.tree.item(selected[0], "values")
+
+        values = self.tree.item(selected[0], "values")
+        project_id = values[0]
+        project_name = values[1]  # Make sure your Treeview's second column is project name
         
         self.assign_popup = Toplevel(self.winfo_toplevel())
         self.assign_popup.title(f"Assign Employees to {project_name}")
