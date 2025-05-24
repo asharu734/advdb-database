@@ -8,12 +8,47 @@ from database import create_connection, create_table
 from utils import get_db_connection, hash_password, check_password
 from auth.auth_routes import auth_bp
 from datetime import datetime
-
+import hmac
+import hashlib
+import base64
+import json
+import time
 
 app = Flask(__name__)
 app.register_blueprint(auth_bp, url_prefix="/auth")
 CORS(app)
 
+# Token settings
+SECRET_KEY = b'your_super_secret_key_here'  # Replace with a strong key
+
+def generate_token(user_id, role, expiry_seconds=3600):
+    payload = {
+        'user_id': user_id,
+        'role': role,
+        'exp': int(time.time()) + expiry_seconds
+    }
+    payload_bytes = json.dumps(payload).encode()
+    signature = hmac.new(SECRET_KEY, payload_bytes, hashlib.sha256).digest()
+    
+    token = base64.urlsafe_b64encode(payload_bytes + b'.' + signature).decode()
+    return token
+
+def decode_token(token):
+    try:
+        decoded = base64.urlsafe_b64decode(token.encode())
+        payload_bytes, signature = decoded.rsplit(b'.', 1)
+        
+        expected_signature = hmac.new(SECRET_KEY, payload_bytes, hashlib.sha256).digest()
+        if not hmac.compare_digest(signature, expected_signature):
+            return None
+        
+        payload = json.loads(payload_bytes.decode())
+        if payload['exp'] < int(time.time()):
+            return None
+        return payload
+    except Exception:
+        return None
+        
 def hash_password(password):
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
@@ -24,9 +59,14 @@ def require_role(allowed_roles):
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
-            role = request.headers.get('X-User-Role')  # Extract role from request header
-            if role not in allowed_roles:
-                return jsonify({'error': 'Unauthorized - insufficient role'}), 403
+            auth_header = request.headers.get('Authorization')
+            if not auth_header or not auth_header.startswith("Bearer "):
+                return jsonify({'error': 'Missing or invalid token'}), 401
+            token = auth_header.split(" ")[1]
+            user_data = decode_token(token)
+            if not user_data or user_data['role'] not in allowed_roles:
+                return jsonify({'error': 'Unauthorized'}), 403
+            request.user = user_data  # You can access it in views
             return f(*args, **kwargs)
         return wrapper
     return decorator
@@ -409,6 +449,7 @@ def register():
         conn.close()
 
 @app.route('/api/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
 def login():
     data = request.json
     conn = get_db_connection()
@@ -416,7 +457,13 @@ def login():
     conn.close()
     
     if user and check_password(data['password'], user['password']):
-        return jsonify({'status': 'success', 'user_id': user['user_id'], 'role': user['role']}), 200
+        token = generate_token(user['user_id'], user['role'])
+        return jsonify({
+            'status': 'success',
+            'token': token,
+            'user_id': user['user_id'],
+            'role': user['role']
+        }), 200
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
     
@@ -441,6 +488,7 @@ def seed_default_users():
 
     conn.commit()
     conn.close()
+
 
 
 # Initialize and run the server
