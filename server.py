@@ -237,7 +237,7 @@ def get_project_deployments(project_id):
         conn.close()
 
 @app.route('/api/deployments/employee/<int:employee_id>')
-def get_employee_deployments(employee_id):
+def get_employee_deployments_filtered(employee_id):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     
@@ -341,6 +341,30 @@ def add_pay_record():
     conn.commit()
     conn.close()
     return jsonify({'pay_id': cursor.lastrowid}), 201
+
+def seed_default_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ADMIN (
+            admin_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            is_super_admin INTEGER NOT NULL DEFAULT 0
+        );
+    ''')
+
+    # Insert a default super admin if not exists
+    cursor.execute('SELECT * FROM ADMIN WHERE username = ?', ('admin',))
+    if cursor.fetchone() is None:
+        cursor.execute(
+            'INSERT INTO ADMIN (username, password, is_super_admin) VALUES (?, ?, ?)',
+            ('admin', 'admin123', 1)
+        )
+
+    conn.commit()
+    conn.close()
 
 # Initialize and run the server
 if __name__ == '__main__':
