@@ -431,17 +431,15 @@ class App:
 
 class LoginApp:
 
-    API_URL = "http://127.0.0.1:5000/auth/login"  # Matches the route registered in auth_routes.py
+    def __init__(self):
+        self.API_URL = "http://127.0.0.1:5000/auth/login"
 
     def show_super_admin_dashboard(self):
-        win = tk.Toplevel()
-        win.title("Super Admin Dashboard")
-        tk.Label(win, text="Welcome, Super Admin!", font=("Arial", 16)).pack(pady=20)
+        App()  # This launches the full GUI
+        # You can also customize App to receive user info if needed
 
     def show_admin_dashboard(self):
-        win = tk.Toplevel()
-        win.title("Admin Dashboard")
-        tk.Label(win, text="Welcome, Admin!", font=("Arial", 16)).pack(pady=20)
+        App()
 
     def show_login_window(self):
         root = tk.Tk()
@@ -455,22 +453,22 @@ class LoginApp:
         password_entry = tk.Entry(root, show="*")
         password_entry.grid(row=1, column=1)
 
-        def login(self):
+        def login():
             username = username_entry.get()
             password = password_entry.get()
 
             try:
-                response = requests.post(API_URL, json={"username": username, "password": password})
+                response = requests.post(self.API_URL, json={"username": username, "password": password})
                 if response.status_code == 200:
                     data = response.json()
                     role = data.get("role")
 
-                    root.destroy()  # Close the login window
+                    root.destroy()  # Close login window
 
                     if role == "super_admin":
-                        show_super_admin_dashboard()
+                        self.show_super_admin_dashboard()
                     elif role == "admin":
-                        show_admin_dashboard()
+                        self.show_admin_dashboard()
                     else:
                         messagebox.showerror("Login Error", f"Unknown role: {role}")
                 else:
@@ -480,7 +478,6 @@ class LoginApp:
 
         tk.Button(root, text="Login", command=login).grid(row=2, columnspan=2, pady=10)
         root.mainloop()
-
 
 if __name__ == "__main__":
     login = LoginApp()
