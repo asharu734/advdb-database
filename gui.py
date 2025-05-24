@@ -173,12 +173,12 @@ class App:
             fname_entry.insert(0, emp_data[2])
             fname_entry.grid(row=1, column=1, padx=5, pady=5)
 
-            Label(self.edit_popup, text="Last Name").grid(row=1, column=0)
+            Label(self.edit_popup, text="Last Name").grid(row=2, column=0)
             lname_entry = Entry(self.edit_popup)
             lname_entry.insert(0, emp_data[1])
             lname_entry.grid(row=2, column=1, padx=5, pady=5)
 
-            Label(self.edit_popup, text="Daily Rate").grid(row=1, column=0)
+            Label(self.edit_popup, text="Daily Rate").grid(row=3, column=0)
             rate_entry = Entry(self.edit_popup)
             rate_entry.insert(0, emp_data[3])
             rate_entry.grid(row=3, column=1, padx=5, pady=5)
