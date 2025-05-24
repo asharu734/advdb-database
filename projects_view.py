@@ -110,7 +110,7 @@ class ProjectManager(Frame):
             messagebox.showinfo("Hmm", "Pick a project to delete")
             return
 
-        project_id, name = self.tree.item(selected[0], "values")
+        project_id, name, *_ = self.tree.item(selected[0], "values")
         confirm = messagebox.askyesno("Sure?", f"Delete project '{name}'?")
         if confirm:
             try:

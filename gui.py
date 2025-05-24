@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk, messagebox, Tk, Toplevel
+import tkinter as tk
 from tkcalendar import DateEntry
 from config import api_base_url
 from projects_view import ProjectManager
@@ -21,7 +22,7 @@ class App:
         self.employee_tab = Frame(self.notebook)
         self.notebook.add(self.employee_tab, text="Employees")
 
-        self.project_tab = ProjectManager(self.notebook, self.api_url)
+        self.project_tab = ProjectManager(self.notebook, self.api_url, self.token)
         self.notebook.add(self.project_tab, text="Projects")
 
         version = "0.0.27"
@@ -425,6 +426,9 @@ class App:
     def view_pay_history(self):
         print("Generate Pay Record button clicked.")
 
+    def open_user_creation(self):
+        UserCreationWindow(self.root, api_url=api_base_url, token=self.token)
+
 class Login:
     def __init__(self, root, on_login_success):
         self.root = root
@@ -468,7 +472,7 @@ class Login:
         except requests.RequestException as e:
             messagebox.showerror("Error", f"Could not connect to server.\n{e}")
 
-class UserCreationWindow(Toplevel):
+class UserCreationWindow(tk.Toplevel):
     def __init__(self, parent, api_url, token):
         super().__init__(parent)
         self.api_url = api_url
@@ -490,7 +494,7 @@ class UserCreationWindow(Toplevel):
         self.role_combobox.current(0)
         self.role_combobox.grid(row=2, column=1, padx=5, pady=5)
 
-        ttk.Button(self, text="Create User", command=self.create_user).grid(row=3, column=0, columnspan=2, pady=10)
+        ttk.Button(self, text="Create User", command=self.create_user).grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
 
     def create_user(self):
         username = self.username_entry.get().strip()

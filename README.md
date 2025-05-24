@@ -26,6 +26,11 @@ pip install tkcalendar
 pip install bcrypt
 pip install pyjwt werkzeug
 
+master
+master123
+
+servant
+servant123
 
 
 
