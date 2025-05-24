@@ -429,56 +429,6 @@ class App:
     def view_pay_history(self):
         print("Generate Pay Record button clicked.")
 
-class LoginApp:
-
-    def __init__(self):
-        self.API_URL = "http://127.0.0.1:5000/auth/login"
-
-    def show_super_admin_dashboard(self):
-        App()  # This launches the full GUI
-        # You can also customize App to receive user info if needed
-
-    def show_admin_dashboard(self):
-        App()
-
-    def show_login_window(self):
-        root = tk.Tk()
-        root.title("Login")
-
-        tk.Label(root, text="Username:").grid(row=0, column=0, padx=10, pady=10)
-        username_entry = tk.Entry(root)
-        username_entry.grid(row=0, column=1)
-
-        tk.Label(root, text="Password:").grid(row=1, column=0, padx=10, pady=10)
-        password_entry = tk.Entry(root, show="*")
-        password_entry.grid(row=1, column=1)
-
-        def login():
-            username = username_entry.get()
-            password = password_entry.get()
-
-            try:
-                response = requests.post(self.API_URL, json={"username": username, "password": password})
-                if response.status_code == 200:
-                    data = response.json()
-                    role = data.get("role")
-
-                    root.destroy()  # Close login window
-
-                    if role == "super_admin":
-                        self.show_super_admin_dashboard()
-                    elif role == "admin":
-                        self.show_admin_dashboard()
-                    else:
-                        messagebox.showerror("Login Error", f"Unknown role: {role}")
-                else:
-                    messagebox.showerror("Login Failed", response.json().get("error", "Unknown error"))
-            except requests.exceptions.RequestException as e:
-                messagebox.showerror("Connection Error", str(e))
-
-        tk.Button(root, text="Login", command=login).grid(row=2, columnspan=2, pady=10)
-        root.mainloop()
-
 if __name__ == "__main__":
     login = LoginApp()
     login.show_login_window()
