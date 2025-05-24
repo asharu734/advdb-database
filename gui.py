@@ -34,9 +34,7 @@ class App:
             pass
         else:
             # Disable or hide admin-only features
-            self.button_frame.grid_slaves(row=0, column=2)[0].config(state=DISABLED)  # Disable Delete
-
-
+            self.button_frame.grid_slaves(row=0, column=2)[0].config(state=NORMAL)  # Disable Delete
 
     def init_ui(self):
         self.init_heading()
@@ -164,13 +162,13 @@ class App:
         
         employee_id = self.tree.item(selected[0])['values'][0]
 
-        #Fetch current data
+        # Fetch current data for this employee only
         try:
-            response = requests.get(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
+            response = requests.get(f"{self.api_url}/employees/{employee_id}", headers={"Authorization": f"Bearer {self.token}"})
             if response.status_code != 200:
                 messagebox.showerror("Error", "Employee not found")
                 return
-                
+
             emp_data = response.json()
         
             #Edit window
@@ -186,17 +184,17 @@ class App:
 
             Label(self.edit_popup, text="First Name").grid(row=1, column=0)
             fname_entry = Entry(self.edit_popup)
-            fname_entry.insert(0, emp_data[2])
+            fname_entry.insert(0, emp_data["firstname"])
             fname_entry.grid(row=1, column=1, padx=5, pady=5)
 
             Label(self.edit_popup, text="Last Name").grid(row=2, column=0)
             lname_entry = Entry(self.edit_popup)
-            lname_entry.insert(0, emp_data[1])
+            lname_entry.insert(0, emp_data["lastname"])
             lname_entry.grid(row=2, column=1, padx=5, pady=5)
 
             Label(self.edit_popup, text="Daily Rate").grid(row=3, column=0)
             rate_entry = Entry(self.edit_popup)
-            rate_entry.insert(0, emp_data[3])
+            rate_entry.insert(0, emp_data["daily_rate"])
             rate_entry.grid(row=3, column=1, padx=5, pady=5)
 
             def save():
@@ -208,7 +206,31 @@ class App:
                     messagebox.showerror("Error", "Daily rate must be a number")
                     return
                 
-                database.update_employees(self.conn, self.cursor, employee_id, new_last, new_first, new_rate)
+                update_data = {
+                    "firstname": new_first,
+                    "lastname": new_last,
+                    "daily_rate": new_rate
+                }
+
+                try:
+                    update_response = requests.put(
+                        f"{self.api_url}/employees/{employee_id}",
+                        headers={
+                            "Authorization": f"Bearer {self.token}",
+                            "Content-Type": "application/json"
+                        },
+                        json=update_data
+                    )
+
+                    if update_response.status_code == 200:
+                        self.load_employees()
+                        self.edit_popup.destroy()
+                    else:
+                        messagebox.showerror("Error", "Failed to update employee")
+
+                except requests.exceptions.RequestException as e:
+                    messagebox.showerror("Error", f"Server error: {e}")
+
                 self.load_employees()
                 self.edit_popup.destroy()
 
@@ -230,7 +252,7 @@ class App:
 
         if confirm:
             try:
-                response = requests.delete(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
+                response = requests.delete(f"{self.api_url}/employees/{employee_id}", headers={"Authorization": f"Bearer {self.token}"})
                 if response.status_code == 200:
                     self.load_employees()  # Refresh the list
                 else:
@@ -440,7 +462,7 @@ class App:
             messagebox.showerror("Error", f"Server error: {e}")
     
     def generate_pay_record(self):
-        print("Generate Pay Record button clicked.") # Placeholder -J
+        print("Generate Pay Record button clicked.")
 
     def view_pay_history(self):
         print("Generate Pay Record button clicked.")
