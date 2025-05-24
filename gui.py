@@ -32,7 +32,7 @@ class App:
         ttk.Label(self.root, text=f"Logged in as role: {role}").pack(pady=10)
         self.load_employees()
 
-        if self.role == 'admin':
+        if self.role == 'super_admin':
             ttk.Button(self.root, text="Create New User", command=self.open_user_creation).pack(pady=10)
 
     def init_ui(self):
