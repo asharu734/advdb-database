@@ -69,6 +69,11 @@ class App:
             .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
             .grid(row=1, column=1, padx=5)
+        Button(self.button_frame, text="Generate Pay Record", command=self.generate_pay_record) \
+            .grid(row=1, column=2, padx=5)
+        Button(self.button_frame, text="Pay History", command=self.view_pay_history) \
+            .grid(row=1, column=3, padx=5)
+
 
     def load_employees(self):
         try:
