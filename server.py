@@ -419,9 +419,33 @@ def login():
         return jsonify({'status': 'success', 'user_id': user['user_id'], 'role': user['role']}), 200
     else:
         return jsonify({'error': 'Invalid credentials'}), 401
+    
+def seed_default_users():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    users_to_add = [
+        {"username": "superadmin", "password": "super123", "role": "super_admin"},
+        {"username": "admin1", "password": "admin123", "role": "admin"},
+    ] # ADD HERE THE NAMES FOR THE ADMINS
+
+    for user in users_to_add:
+        cursor.execute("SELECT * FROM user WHERE username = ?", (user["username"],))
+        if not cursor.fetchone():
+            hashed = hash_password(user["password"])
+            cursor.execute(
+                "INSERT INTO user (username, password, role) VALUES (?, ?, ?)",
+                (user["username"], hashed, user["role"])
+            )
+            print(f"Created user: {user['username']} with role {user['role']}")
+
+    conn.commit()
+    conn.close()
 
 
 # Initialize and run the server
 if __name__ == '__main__':
+    seed_default_users()
+    app.run(debug=True)
     init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)
