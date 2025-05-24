@@ -124,7 +124,7 @@ class App:
                 "daily_rate": float(self.rate_entry.get())
             }
             try:
-                response = requests.post(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
+                response = requests.post(f"{self.api_url}/employees", json=data, headers={"Authorization": f"Bearer {self.token}"})
                 if response.status_code == 201:
                     self.load_employees()  # Refresh the list
                     self.popup.destroy()
@@ -216,7 +216,7 @@ class App:
 
         if confirm:
             try:
-                response = requests.delete(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
+                response = requests.delete(f"{self.api_url}/employees/{employee_id}", headers={"Authorization": f"Bearer {self.token}"})
                 if response.status_code == 200:
                     self.load_employees()  # Refresh the list
                 else:
