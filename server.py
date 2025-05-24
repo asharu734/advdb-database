@@ -489,11 +489,8 @@ def seed_default_users():
     conn.commit()
     conn.close()
 
-
-
 # Initialize and run the server
 if __name__ == '__main__':
     seed_default_users()
-    app.run(debug=True)
     init_db()
     app.run(host='0.0.0.0', port=5000, debug=True)

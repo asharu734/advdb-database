@@ -429,6 +429,8 @@ class App:
     def view_pay_history(self):
         print("Generate Pay Record button clicked.")
 
+class LoginApp:
+
     API_URL = "http://127.0.0.1:5000/auth/login"  # Matches the route registered in auth_routes.py
 
     def show_super_admin_dashboard(self):
@@ -481,6 +483,7 @@ class App:
 
 
 if __name__ == "__main__":
+    login = LoginApp()
+    login.show_login_window()
     app = App()
-    app.show_login_window()
     app.root.mainloop()
