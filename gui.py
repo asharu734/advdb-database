@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, Tk, Toplevel
 from tkcalendar import DateEntry
 from config import api_base_url
 from projects_view import ProjectManager
@@ -28,21 +28,15 @@ class App:
         self.root.title(f"Employee Payroll Management System v{version}")
 
         self.init_ui()
+        ttk.Label(self.root, text=f"Logged in as role: {role}").pack(pady=10)
         self.load_employees()
 
+        if self.role == 'admin':
+            ttk.Button(self.root, text="Create New User", command=self.open_user_creation).pack(pady=10)
 
     def init_ui(self):
-        self.init_heading()
         self.init_employee_view()
         self.init_buttons()
-        
-
-    def init_heading(self):
-        self.heading = ttk.Label(
-            self.employee_tab,
-            text="Select Employee...")
-        self.heading.pack(fill="x", padx=10, pady=5)
-
 
     def init_employee_view(self):
         self.tree = ttk.Treeview(
@@ -473,6 +467,63 @@ class Login:
                 messagebox.showerror("Login Failed", "Invalid credentials.")
         except requests.RequestException as e:
             messagebox.showerror("Error", f"Could not connect to server.\n{e}")
+
+class UserCreationWindow(Toplevel):
+    def __init__(self, parent, api_url, token):
+        super().__init__(parent)
+        self.api_url = api_url
+        self.token = token
+        self.title("Create New User")
+
+        ttk.Label(self, text="Username:").grid(row=0, column=0, sticky="e", padx=5, pady=5)
+        self.username_entry = ttk.Entry(self)
+        self.username_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        ttk.Label(self, text="Password:").grid(row=1, column=0, sticky="e", padx=5, pady=5)
+        self.password_entry = ttk.Entry(self, show="*")
+        self.password_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        ttk.Label(self, text="Role:").grid(row=2, column=0, sticky="e", padx=5, pady=5)
+        self.role_var = tk.StringVar()
+        self.role_combobox = ttk.Combobox(self, textvariable=self.role_var, state="readonly")
+        self.role_combobox['values'] = ('admin', 'super_admin')
+        self.role_combobox.current(0)
+        self.role_combobox.grid(row=2, column=1, padx=5, pady=5)
+
+        ttk.Button(self, text="Create User", command=self.create_user).grid(row=3, column=0, columnspan=2, pady=10)
+
+    def create_user(self):
+        username = self.username_entry.get().strip()
+        password = self.password_entry.get().strip()
+        role = self.role_var.get()
+
+        if not username or not password or role not in ['admin', 'super_admin']:
+            messagebox.showerror("Input Error", "Please fill all fields with valid data.")
+            return
+
+        data = {
+            "username": username,
+            "password": password,
+            "role": role
+        }
+
+        try:
+            response = requests.post(
+                f"{self.api_url}/users",
+                json=data,
+                headers={"Authorization": f"Bearer {self.token}"}
+            )
+            if response.status_code == 201:
+                messagebox.showinfo("Success", f"User '{username}' created successfully!")
+                self.username_entry.delete(0, tk.END)
+                self.password_entry.delete(0, tk.END)
+                self.role_combobox.current(0)
+            elif response.status_code == 409:
+                messagebox.showerror("Error", "Username already exists.")
+            else:
+                messagebox.showerror("Error", f"Failed to create user: {response.text}")
+        except requests.exceptions.RequestException as e:
+            messagebox.showerror("Error", f"Server error: {e}")
 
 if __name__ == "__main__":
     login_root = Tk()

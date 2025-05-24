@@ -7,8 +7,9 @@ import requests
 import datetime
 
 class ProjectManager(Frame):
-    def __init__(self, parent, api_url):
+    def __init__(self, parent, api_url, token):
         super().__init__(parent)
+        self.token = token
 
         self.api_url = api_base_url
 
@@ -36,11 +37,15 @@ class ProjectManager(Frame):
 
     def load_projects(self):
         try:
-            response = requests.get(f"{self.api_url}/projects")
+            response = requests.get(f"{self.api_url}/projects", headers={"Authorization": f"Bearer {self.token}"})
             if response.status_code == 200:
                 self.tree.delete(*self.tree.get_children())
                 for project in response.json():
-                    self.tree.insert("", "end", values=(project['project_id'], project['project_name']))
+                    self.tree.insert("", "end", values=(project['project_id'],
+                                                        project['project_name'],
+                                                        project['project_start'],
+                                                        project['project_end'],
+                                                        f"₱{project['budget']:,.2f}"))
             else:
                 messagebox.showerror("Error", "Failed to load projects")
         except requests.exceptions.RequestException as e:
@@ -87,7 +92,7 @@ class ProjectManager(Frame):
                     "project_end": end_date.isoformat(),
                     "budget": float(budget)
                 }
-                response = requests.post(f"{self.api_url}/projects", json=project_data)
+                response = requests.post(f"{self.api_url}/projects", json=project_data, headers={"Authorization": f"Bearer {self.token}"})
                 if response.status_code == 201:
                     self.load_projects()
                     self.popup.destroy()
@@ -109,7 +114,7 @@ class ProjectManager(Frame):
         confirm = messagebox.askyesno("Sure?", f"Delete project '{name}'?")
         if confirm:
             try:
-                response = requests.delete(f"{self.api_url}/projects/{project_id}")
+                response = requests.delete(f"{self.api_url}/projects/{project_id}", headers={"Authorization": f"Bearer {self.token}"})
                 if response.status_code == 200:
                     self.load_projects()
                 else:
@@ -134,7 +139,7 @@ class ProjectManager(Frame):
         
         # Get all employees
         try:
-            response = requests.get(f"{self.api_url}/employees")
+            response = requests.get(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
             if response.status_code != 200:
                 messagebox.showerror("Error", "Failed to load employees")
                 return
@@ -196,7 +201,7 @@ class ProjectManager(Frame):
         
     def load_project_assignments(self, project_id):
         try:
-            response = requests.get(f"{self.api_url}/deployments/project/{project_id}")
+            response = requests.get(f"{self.api_url}/deployments/project/{project_id}", headers={"Authorization": f"Bearer {self.token}"})
             if response.status_code == 200:
                 self.assignments_tree.delete(*self.assignments_tree.get_children())
                 for assignment in response.json():
@@ -229,7 +234,7 @@ class ProjectManager(Frame):
                 "time_in": time_in,
                 "time_out": time_out,
                 "date": date
-            })
+            }, headers={"Authorization": f"Bearer {self.token}"})
             
             if response.status_code == 201:
                 messagebox.showinfo("Success", "Employee assigned successfully")
