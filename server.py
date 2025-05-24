@@ -199,16 +199,22 @@ def compute_attendance_hours(time_in_str, time_out_str):
     return total_seconds / 3600
 
 # EMPLOYEE ENDPOINTS
-@app.route('/api/employees', methods=['GET', 'POST'])
-@authorize(['super_admin', 'admin'])
-def employees():
+@app.route('/api/employees', methods=['GET'])
+def get_employee():
     conn = get_db_connection()
     try:
         if request.method == 'GET':
             employees = conn.execute('SELECT * FROM employee').fetchall()
             return jsonify([dict(row) for row in employees])
-        
-        elif request.method == 'POST':
+    finally:
+        conn.close()
+
+@app.route('/api/employees', methods=['POST'])
+@authorize(['super_admin', 'admin'])
+def add_employee():
+    conn = get_db_connection()
+    try:
+        if request.method == 'POST':
             data = request.json
             cursor = conn.cursor()
             cursor.execute(
@@ -224,6 +230,7 @@ def employees():
             }), 201
     finally:
         conn.close()
+
 
 @app.route('/api/employees/<int:employee_id>', methods=['DELETE'])
 @authorize(['super_admin'])
@@ -242,16 +249,22 @@ def delete_employee(employee_id):
         return jsonify({"error": "Employee not found"}), 404
 
 # PROJECT ENDPOINTS
-@app.route('/api/projects', methods=['GET', 'POST'])
-@authorize(['super_admin', 'admin'])
+@app.route('/api/projects', methods=['GET'])
 def projects():
     conn = get_db_connection()
     try:
         if request.method == 'GET':
             projects = conn.execute('SELECT * FROM project').fetchall()
             return jsonify([dict(row) for row in projects])
-        
-        elif request.method == 'POST':
+    finally:
+        conn.close()
+
+@app.route('/api/projects', methods=['POST'])
+@authorize(['super_admin', 'admin'])
+def add_project():
+    conn = get_db_connection()
+    try:
+        if request.method == 'POST':
             data = request.json
             cursor = conn.cursor()
             cursor.execute(
