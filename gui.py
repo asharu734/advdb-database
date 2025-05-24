@@ -78,7 +78,7 @@ class App:
 
     def load_employees(self):
         try:
-            response = requests.get(f"{self.api_url}/employees")
+            response = requests.get(f"{self.api_url}/employees", headers={"Authorization": f"Bearer {self.token}"})
             if response.status_code == 200:
                 employees = response.json()
                 self.tree.delete(*self.tree.get_children())

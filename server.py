@@ -200,6 +200,7 @@ def compute_attendance_hours(time_in_str, time_out_str):
 
 # EMPLOYEE ENDPOINTS
 @app.route('/api/employees', methods=['GET'])
+@authorize(['super_admin', 'admin'])
 def get_employee():
     conn = get_db_connection()
     try:
@@ -300,6 +301,7 @@ def delete_project(project_id):
 
 # DEPLOYMENT ENDPOINTS
 @app.route('/api/deployments/employee/<int:employee_id>', methods=['GET'])
+@authorize(['super_admin', 'admin'])
 def get_employee_deployments(employee_id):
     conn = get_db_connection()
     try:
@@ -339,6 +341,7 @@ def add_deployment():
         conn.close()
 
 @app.route('/api/deployments/project/<int:project_id>', methods=['GET'])
+@authorize(['super_admin', 'admin'])
 def get_project_deployments(project_id):
     conn = get_db_connection()
     try:
