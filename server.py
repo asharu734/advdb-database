@@ -23,12 +23,12 @@ def init_db():
     cursor = conn.cursor()
     
     cursor.executescript('''
-        CREATE TABLE IF NOT EXISTS USER (
-            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            role TEXT CHECK(role IN ('admin', 'super_admin')) NOT NULL
-        );
+    CREATE TABLE IF NOT EXISTS USER (
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        role TEXT CHECK(role IN ('admin', 'super_admin')) NOT NULL
+    );
               
     CREATE TABLE IF NOT EXISTS EMPLOYEE (
         employee_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -93,6 +93,7 @@ def init_db():
         FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
     );
     ''')
+
     conn.commit()
     conn.close()
 
@@ -430,6 +431,6 @@ def add_pay_record():
 
 # Initialize and run the server
 if __name__ == '__main__':
-    seed_default_users()
     init_db()
+    seed_default_users()
     app.run(host='0.0.0.0', port=5000, debug=True)
