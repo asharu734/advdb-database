@@ -4,7 +4,6 @@ import tkinter as tk
 from tkcalendar import DateEntry
 from config import api_base_url
 from projects_view import ProjectManager
-import database
 import requests
 
 
@@ -145,40 +144,34 @@ class App:
         
         employee_id = self.tree.item(selected[0])['values'][0]
 
-        # Fetch current data for this employee only
         try:
-            response = requests.get(f"{self.api_url}/employees/{employee_id}", headers={"Authorization": f"Bearer {self.token}"})
+            response = requests.get(
+                f"{self.api_url}/employees/{employee_id}",
+                headers={"Authorization": f"Bearer {self.token}"}
+            )
             if response.status_code != 200:
                 messagebox.showerror("Error", "Employee not found")
                 return
 
             emp_data = response.json()
-        
-            #Edit window
+
             self.edit_popup = Toplevel(self.root)
             self.edit_popup.title("Edit Employee")
 
-            Label(self.edit_popup, text="Edit Employee Data...").grid(
-                row=0,
-                column=0,
-                padx=5,
-                pady=10
-            )
-
-            Label(self.edit_popup, text="First Name").grid(row=1, column=0)
+            Label(self.edit_popup, text="First Name").grid(row=0, column=0)
             fname_entry = Entry(self.edit_popup)
             fname_entry.insert(0, emp_data["firstname"])
-            fname_entry.grid(row=1, column=1, padx=5, pady=5)
+            fname_entry.grid(row=0, column=1, padx=5, pady=5)
 
-            Label(self.edit_popup, text="Last Name").grid(row=2, column=0)
+            Label(self.edit_popup, text="Last Name").grid(row=1, column=0)
             lname_entry = Entry(self.edit_popup)
             lname_entry.insert(0, emp_data["lastname"])
-            lname_entry.grid(row=2, column=1, padx=5, pady=5)
+            lname_entry.grid(row=1, column=1, padx=5, pady=5)
 
-            Label(self.edit_popup, text="Daily Rate").grid(row=3, column=0)
+            Label(self.edit_popup, text="Daily Rate").grid(row=2, column=0)
             rate_entry = Entry(self.edit_popup)
             rate_entry.insert(0, emp_data["daily_rate"])
-            rate_entry.grid(row=3, column=1, padx=5, pady=5)
+            rate_entry.grid(row=2, column=1, padx=5, pady=5)
 
             def save():
                 new_first = fname_entry.get()
@@ -188,7 +181,7 @@ class App:
                 except ValueError:
                     messagebox.showerror("Error", "Daily rate must be a number")
                     return
-                
+
                 update_data = {
                     "firstname": new_first,
                     "lastname": new_last,
@@ -214,11 +207,8 @@ class App:
                 except requests.exceptions.RequestException as e:
                     messagebox.showerror("Error", f"Server error: {e}")
 
-                self.load_employees()
-                self.edit_popup.destroy()
+            Button(self.edit_popup, text="Save", command=save).grid(row=3, columnspan=2, pady=10)
 
-            Button(self.edit_popup, text="Save", command=save).grid(row=4, columnspan=2, pady=5)
-        
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Could not connect to server: {e}")
 

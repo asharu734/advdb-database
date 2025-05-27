@@ -246,6 +246,46 @@ def delete_employee(employee_id):
     else:
         return jsonify({"error": "Employee not found"}), 404
 
+@app.route('/api/employees/<int:employee_id>', methods=['GET'])
+@authorize(['super_admin', 'admin'])
+def get_single_employee(employee_id):
+    conn = get_db_connection()
+    employee = conn.execute('SELECT * FROM employee WHERE employee_id = ?', (employee_id,)).fetchone()
+    conn.close()
+
+    if employee:
+        return jsonify(dict(employee)), 200
+    else:
+        return jsonify({'error': 'Employee not found'}), 404
+
+
+@app.route('/api/employees/<int:employee_id>', methods=['PUT'])
+@authorize(['super_admin', 'admin'])
+def update_employee(employee_id):
+    data = request.json
+    firstname = data.get('firstname')
+    lastname = data.get('lastname')
+    daily_rate = data.get('daily_rate')
+
+    if not firstname or not lastname or daily_rate is None:
+        return jsonify({'error': 'Missing fields'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+        UPDATE employee
+        SET firstname = ?, lastname = ?, daily_rate = ?
+        WHERE employee_id = ?
+    ''', (firstname, lastname, daily_rate, employee_id))
+    conn.commit()
+    updated = cursor.rowcount
+    conn.close()
+
+    if updated:
+        return jsonify({'status': 'updated'}), 200
+    else:
+        return jsonify({'error': 'Employee not found'}), 404
+
 # PROJECT ENDPOINTS
 @app.route('/api/projects', methods=['GET'])
 def projects():
