@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import messagebox
 import requests
-from config import api_base_url
+from main_config import api_base_url
 
 class Login:
     def __init__(self, root, on_login_success):

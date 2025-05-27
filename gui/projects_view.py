@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import Frame
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry
-from config import api_base_url
+from main_config import api_base_url
 import requests
 import datetime
 

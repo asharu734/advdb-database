@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk, messagebox, Toplevel
 from tkcalendar import DateEntry
 import requests
-from config import api_base_url
+from main_config import api_base_url
 from projects_view import ProjectManager
 from user_creation import UserCreationWindow
 
