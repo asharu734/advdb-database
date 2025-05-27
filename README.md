@@ -32,5 +32,9 @@ master123
 servant
 servant123
 
+cd gui
+python server.py
 
+cd gui
+python main.py
 
