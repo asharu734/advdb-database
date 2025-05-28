@@ -60,7 +60,7 @@ def init_db():
 
     CREATE TABLE IF NOT EXISTS DEDUCTION (
         deduction_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        employee_id INTEGER NOT NULL,
+        payroll_id INTEGER NOT NULL,
         deduction_type TEXT NOT NULL,
         deduction_amount REAL NOT NULL,
         FOREIGN KEY (payroll_id) REFERENCES PAYROLL(payroll_id)
@@ -402,14 +402,15 @@ def create_payroll():
         payroll_id = cursor.lastrowid
         
         # Add payroll deductions if any
-        for deduction in data.get('deductions', []):
-            cursor.execute('''
-                INSERT INTO payroll_deduction 
-                (payroll_id, deduction_id, deduction_amount)
-                VALUES (?, ?, ?)
-            ''', (payroll_id, deduction['deduction_id'], deduction['amount']))
-        
-        conn.commit()
+        deductions = data.get('deductions', [])
+        if isinstance(deductions, list):
+            for deduction in deductions:
+                cursor.execute('''
+                    INSERT INTO payroll_deduction 
+                    (payroll_id, deduction_id, deduction_amount)
+                    VALUES (?, ?, ?)
+                ''', (payroll_id, deduction['deduction_id'], deduction['amount']))
+                conn.commit()
         return jsonify({'payroll_id': payroll_id}), 201
     finally:
         conn.close()
@@ -445,8 +446,8 @@ def deductions():
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute(
-            'INSERT INTO deduction (employee_id, deduction_type) VALUES (?, ?)',
-            (data['employee_id'], data['deduction_type'])
+            'INSERT INTO deduction (employee_id, deduction_type, deduction_amount) VALUES (?, ?, ?)',
+            (data['employee_id'], data['deduction_type'], data['deduction_amount'])
         )
         conn.commit()
         conn.close()
@@ -469,6 +470,20 @@ def add_pay_record():
     conn.commit()
     conn.close()
     return jsonify({'pay_id': cursor.lastrowid}), 201
+
+@app.route('/api/payrecords', methods=['GET'])
+@authorize(['super_admin', 'admin'])
+def get_pay_records():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    pay_records = cursor.execute('''
+        SELECT pr.*, e.firstname, e.lastname 
+        FROM pay_record pr
+        JOIN employee e ON pr.employee_id = e.employee_id
+        ORDER BY date_paid DESC
+    ''').fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in pay_records]), 200
 
 # Initialize and run the server
 if __name__ == '__main__':

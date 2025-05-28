@@ -63,11 +63,8 @@ class App:
             .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
             .grid(row=1, column=1, padx=5)
-        Button(self.button_frame, text="Generate Pay Record", command=self.generate_pay_record) \
+        Button(self.button_frame, text="Generate Pay Record", command=self.view_pay_record) \
             .grid(row=1, column=2, padx=5)
-        Button(self.button_frame, text="Pay History", command=self.view_pay_history) \
-            .grid(row=1, column=3, padx=5)
-
 
     def load_employees(self):
         try:
@@ -433,11 +430,49 @@ class App:
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Server error: {e}")
     
-    def generate_pay_record(self):
-        print("Generate Pay Record button clicked.")
+    def view_pay_record(self):
+        if not self.token:
+            messagebox.showerror("Error", "You must be logged in to view pay records.")
+            return
 
-    def view_pay_history(self):
-        print("Generate Pay Record button clicked.")
+        headers = {
+            "Authorization": f"Bearer {self.token}"
+        }
 
+        try:
+            response = requests.get(f"{self.api_url}/payrecords", headers=headers)
+            if response.status_code == 200:
+                records = response.json()
+
+                # Create a new window
+                window = Toplevel(self.root)
+                window.title("Pay Records")
+                window.geometry("800x400")
+
+                # Create Treeview
+                cols = ("Pay ID", "Employee", "Date Paid", "Amount", "Reference No.")
+                tree = ttk.Treeview(window, columns=cols, show="headings")
+
+                for col in cols:
+                    tree.heading(col, text=col)
+                    tree.column(col, width=150)
+
+                for record in records:
+                    employee_name = f"{record['firstname']} {record['lastname']}"
+                    tree.insert("", "end", values=(
+                        record["pay_id"],
+                        employee_name,
+                        record["date_paid"],
+                        f"₱{record['amount']:,.2f}",
+                        record["reference_number"]
+                    ))
+
+                    tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+                else:
+                    messagebox.showerror("Error", f"Failed to fetch records: {response.text}")
+        except requests.RequestException as e:
+                messagebox.showerror("Error", f"Request failed: {str(e)}")
+        
     def open_user_creation(self):
         UserCreationWindow(self.root, api_url=api_base_url, token=self.token)
