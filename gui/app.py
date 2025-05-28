@@ -5,6 +5,7 @@ import requests
 from main_config import api_base_url
 from projects_view import ProjectManager
 from user_creation import UserCreationWindow
+from datetime import datetime
 
 class App:
     def __init__(self, token, role):
@@ -63,7 +64,7 @@ class App:
             .grid(row=0, column=3, padx=5)
         Button(self.button_frame, text="Calculate Payroll", command=self.calculate_payroll) \
             .grid(row=1, column=1, padx=5)
-        Button(self.button_frame, text="Generate Pay Record", command=self.view_pay_record) \
+        Button(self.button_frame, text="View Pay Record", command=self.view_pay_record) \
             .grid(row=1, column=2, padx=5)
 
     def load_employees(self):
@@ -414,7 +415,7 @@ class App:
             return
             
         try:
-            # Save to database
+            # First save the payroll record
             response = requests.post(
                 f"{self.api_url}/payroll",
                 headers={"Authorization": f"Bearer {self.token}"},
@@ -422,10 +423,29 @@ class App:
             )
             
             if response.status_code == 201:
-                messagebox.showinfo("Success", "Payroll record saved successfully")
-                self.payroll_popup.destroy()
+                payroll_data = response.json()
+                
+                # Create a pay record associated with this payroll
+                pay_record_data = {
+                    'employee_id': emp_id,
+                    'date_paid': datetime.now().strftime('%Y-%m-%d'),  # Current date
+                    'amount': self._current_payroll_calc['net_salary'],
+                    'reference_number': f"PY{datetime.now().strftime('%Y%m%d%H%M%S')}"  # Unique reference
+                }
+                
+                pay_record_response = requests.post(
+                    f"{self.api_url}/payrecords",
+                    headers={"Authorization": f"Bearer {self.token}"},
+                    json=pay_record_data
+                )
+                
+                if pay_record_response.status_code == 201:
+                    messagebox.showinfo("Success", "Payroll and payment records saved successfully")
+                    self.payroll_popup.destroy()
+                else:
+                    messagebox.showerror("Error", f"Payroll saved but payment record failed: {pay_record_response.text}")
             else:
-                messagebox.showerror("Error", "Failed to save payroll record")
+                messagebox.showerror("Error", f"Failed to save payroll record: {response.text}")
                 
         except requests.exceptions.RequestException as e:
             messagebox.showerror("Error", f"Server error: {e}")
@@ -469,8 +489,8 @@ class App:
 
                     tree.pack(fill="both", expand=True, padx=10, pady=10)
 
-                else:
-                    messagebox.showerror("Error", f"Failed to fetch records: {response.text}")
+            else:
+                messagebox.showerror("Error", f"Failed to fetch records: {response.text}")
         except requests.RequestException as e:
                 messagebox.showerror("Error", f"Request failed: {str(e)}")
         

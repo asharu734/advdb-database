@@ -393,7 +393,7 @@ def create_payroll():
         
         # Create payroll record
         cursor.execute('''
-            INSERT INTO payroll 
+            INSERT INTO PAYROLL 
             (employee_id, gross_salary, net_salary, week_start, week_end)
             VALUES (?, ?, ?, ?, ?)
         ''', (data['employee_id'], data['gross_salary'], 
@@ -406,12 +406,16 @@ def create_payroll():
         if isinstance(deductions, list):
             for deduction in deductions:
                 cursor.execute('''
-                    INSERT INTO payroll_deduction 
-                    (payroll_id, deduction_id, deduction_amount)
+                    INSERT INTO DEDUCTION 
+                    (payroll_id, deduction_type, deduction_amount)
                     VALUES (?, ?, ?)
-                ''', (payroll_id, deduction['deduction_id'], deduction['amount']))
-                conn.commit()
+                ''', (payroll_id, deduction['deduction_type'], deduction['deduction_amount']))
+        
+        conn.commit()  # Commit once after all operations
         return jsonify({'payroll_id': payroll_id}), 201
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
 
