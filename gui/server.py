@@ -62,7 +62,8 @@ def init_db():
         deduction_id INTEGER PRIMARY KEY AUTOINCREMENT,
         employee_id INTEGER NOT NULL,
         deduction_type TEXT NOT NULL,
-        FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
+        deduction_amount REAL NOT NULL,
+        FOREIGN KEY (payroll_id) REFERENCES PAYROLL(payroll_id)
     );
 
     CREATE TABLE IF NOT EXISTS PAYROLL (
@@ -73,15 +74,6 @@ def init_db():
         week_start DATE NOT NULL,
         week_end DATE NOT NULL,
         FOREIGN KEY (employee_id) REFERENCES EMPLOYEE(employee_id)
-    );
-
-    CREATE TABLE IF NOT EXISTS PAYROLL_DEDUCTION (
-        payroll_id INTEGER NOT NULL,
-        deduction_id INTEGER NOT NULL,
-        deduction_amount REAL NOT NULL,
-        PRIMARY KEY(payroll_id, deduction_id),
-        FOREIGN KEY (payroll_id) REFERENCES PAYROLL(payroll_id),
-        FOREIGN KEY (deduction_id) REFERENCES DEDUCTION(deduction_id)
     );
                 
     CREATE TABLE IF NOT EXISTS PAY_RECORD (
